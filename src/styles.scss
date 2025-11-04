@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Placeholders cho theme chung, bạn chỉnh sau */
+:root {
+  /* Ví dụ token màu */
+  --layout-bg: #020617;
+  --layout-sidebar-bg: #020617;
+}
