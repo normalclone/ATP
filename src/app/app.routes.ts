@@ -38,10 +38,24 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'alerts',
+        loadComponent: () =>
+          import('./pages/alerts/alerts.component').then(
+            (m) => m.AlertsComponent
+          ),
+      },
+      {
         path: 'schedulers',
         loadComponent: () =>
           import('./pages/schedulers/schedulers.component').then(
             (m) => m.SchedulersComponent
+          ),
+      },
+      {
+        path: 'components',
+        loadComponent: () =>
+          import('./features/components-gallery/components-gallery.component').then(
+            (m) => m.ComponentsGalleryComponent
           ),
       },
     ],

@@ -2,9 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Placeholders cho theme chung, bạn chỉnh sau */
-:root {
-  /* Ví dụ token màu */
-  --layout-bg: #020617;
-  --layout-sidebar-bg: #020617;
+@import './themes.css';
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    font-size: var(--fs-base);
+    line-height: var(--lh-normal);
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-hover) var(--bg-deep);
+  }
+
+  *::-webkit-scrollbar {
+    width: 0.6rem;
+    height: 0.6rem;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: var(--bg-deep);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--primary-hover);
+    border: 2px solid var(--bg-deep);
+    border-radius: var(--radius-lg);
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+  }
+}
+
+@layer components {
+  .focus-ring:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
 }

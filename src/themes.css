@@ -1,0 +1,84 @@
+:root {
+  /* ====== FONT FAMILY ====== */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+  /* ====== FONT SIZE (rem) ====== */
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.8125rem;
+  --fs-base: 0.875rem;
+  --fs-md: 0.9375rem;
+  --fs-lg: 1rem;
+  --fs-xl: 1.125rem;
+  --fs-2xl: 1.25rem;
+
+  /* ====== FONT WEIGHT ====== */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-extrabold: 800;
+
+  /* ====== LINE HEIGHT ====== */
+  --lh-tight: 1.1;
+  --lh-snug: 1.25;
+  --lh-normal: 1.5;
+  --lh-relaxed: 1.7;
+
+  /* Nền */
+  --bg: #1e1f22;
+  --bg-deep: #111214;
+  --bg-elev: #2b2d31;
+  --line: #3b3d42;
+
+  /* Chữ */
+  --text: #e3e5e8;
+  --text-dim: #b5bac1;
+  --text-soft: rgba(255, 255, 255, 0.7);
+  --text-mute: rgba(255, 255, 255, 0.5);
+  --text-faint: rgba(255, 255, 255, 0.4);
+
+  /* Border / overlay */
+  --border-soft: rgba(255, 255, 255, 0.05);
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.2);
+  --overlay-glass: rgba(30, 31, 34, 0.8);
+
+  /* Brand & state */
+  --primary: #5865f2;
+  --primary-hover: #4752c4;
+  --primary-soft: rgba(88, 101, 242, 0.2);
+  --primary-border: rgba(88, 101, 242, 0.3);
+
+  --success: #3ba55d;
+  --success-soft: rgba(16, 185, 129, 0.2);
+  --success-border: rgba(16, 185, 129, 0.3);
+
+  --warn: #faa81a;
+  --warn-soft: rgba(245, 158, 11, 0.2);
+  --warn-border: rgba(245, 158, 11, 0.3);
+
+  --danger: #d83c3e;
+  --danger-alt: #ef4444;
+  --danger-hover: #dc2626;
+  --danger-soft: rgba(239, 68, 68, 0.2);
+  --danger-border: rgba(239, 68, 68, 0.3);
+
+  --text-badge-primary: #c7cbff;
+  --text-badge-success: #d1fee3;
+  --text-badge-warn: #fde9be;
+  --text-badge-danger: #fecaca;
+
+  /* Chart */
+  --chart-pass: #5865f2;
+  --chart-ddr: #22c55e;
+  --chart-de: #f59e0b;
+  --chart-flaky: #ef4444;
+
+  /* Geometry / effect */
+  --radius-lg: 14px;
+  --radius-md: 10px;
+  --shadow-soft: 0 8px 30px rgba(0, 0, 0, 0.35);
+  --focus-ring: 0 0 0 3px rgba(88, 101, 242, 0.35);
+}
