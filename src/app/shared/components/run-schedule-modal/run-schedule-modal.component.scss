@@ -1,0 +1,39 @@
+:host {
+  display: block;
+}
+
+/* Match global scrollbar styling for modal scrollables */
+.modal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-hover) var(--bg-deep);
+
+  &::-webkit-scrollbar {
+    width: 0.6rem;
+    height: 0.6rem;
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--bg-deep);
+  }
+
+  &::-webkit-scrollbar-button,
+  &::-webkit-scrollbar-button:start:decrement,
+  &::-webkit-scrollbar-button:end:increment {
+    display: none;
+    width: 0;
+    height: 0;
+    background: transparent;
+    border: none;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--primary-hover);
+    border: 2px solid var(--bg-deep);
+    border-radius: var(--radius-lg);
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+  }
+}

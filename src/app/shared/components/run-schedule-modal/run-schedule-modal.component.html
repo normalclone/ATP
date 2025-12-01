@@ -1,0 +1,484 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm transition"
+  *ngIf="open" (click)="closeModal()">
+  <div
+    class="w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-2xl border border-border-subtle bg-bg-elev shadow-soft/70"
+    (click)="$event.stopPropagation()">
+    <header class="flex items-start justify-between gap-3 border-b border-white/10 px-6 py-4">
+      <div>
+        <div class="flex items-center gap-2 text-primary">
+          <lucide-icon name="play" class="h-4 w-4"></lucide-icon>
+          <span class="text-xs uppercase tracking-wide">run-schedule-popup</span>
+        </div>
+        <h2 class="text-lg font-semibold text-text">Chạy / Đặt lịch testcase</h2>
+        <p class="text-sm text-text-dim">Chọn spec cần chạy, cấu hình môi trường và chế độ chạy.</p>
+      </div>
+      <button type="button"
+        class="h-9 w-9 rounded-full border border-border-subtle bg-white/5 text-text transition hover:bg-white/10"
+        (click)="closeModal()" aria-label="Đóng">
+        ✕
+      </button>
+    </header>
+
+    <div class="modal-scroll max-h-[calc(90vh-170px)] overflow-y-auto">
+      <div class="grid grid-cols-1 divide-y divide-border-soft xl:grid-cols-10 xl:divide-x xl:divide-y-0">
+        <!-- Left: Spec list -->
+        <section class="xl:col-span-7">
+          <div
+            class="flex flex-col gap-3 border-b border-white/10 px-6 py-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p class="text-sm font-semibold text-text">Chọn spec cần chạy</p>
+              <p class="text-xs text-text-dim">Chọn ít nhất 1 spec để chạy hoặc đặt lịch.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 text-sm">
+              <div
+                class="flex h-9 items-center rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text focus-within:ring-2 focus-within:ring-primary/40">
+                <lucide-icon name="search" class="mr-2 h-4 w-4 text-text-dim"></lucide-icon>
+                <input [(ngModel)]="search" (ngModelChange)="onFilterChanged()" type="search"
+                  class="w-full bg-transparent text-text placeholder:text-text-faint focus:outline-none"
+                  placeholder="Tìm spec theo tên file, mô tả..." />
+              </div>
+              <div
+                class="flex h-9 items-center justify-between rounded-xl border border-border-subtle bg-white/5 px-3 text-xs text-text">
+                <span>{{ moduleFilter }}</span>
+                <select [(ngModel)]="moduleFilter" (ngModelChange)="onFilterChanged()" class="sr-only"
+                  aria-label="Lọc module">
+                  <option *ngFor="let mod of moduleOptions" [value]="mod">{{ mod }}</option>
+                </select>
+                <span class="text-text-dim">v</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-bg border-b border-white/10 text-xs uppercase tracking-wide text-text-dim">
+                <tr class="text-left">
+                  <th class="w-40 px-6 py-3">
+                    <label class="inline-flex items-center gap-2 text-text-dim">
+                      <input type="checkbox"
+                        class="h-4 w-4 rounded border border-border-subtle bg-white/5 text-primary focus:ring-primary"
+                        [checked]="selectAll" (change)="toggleSelectAll($any($event.target).checked)" />
+                      <span>Chọn tất cả</span>
+                    </label>
+                  </th>
+                  <th class="px-4 py-3">Spec / File</th>
+                  <th class="px-4 py-3">Mô tả</th>
+                  <th class="px-4 py-3">Module</th>
+                  <th class="px-4 py-3">Lần chạy gần nhất</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-white/5">
+                <tr *ngFor="let spec of pagedSpecs" class="transition hover:bg-white/5">
+                  <td class="px-6 py-3">
+                    <input type="checkbox"
+                      class="h-4 w-4 rounded border border-border-subtle bg-white/5 text-primary focus:ring-primary"
+                      [checked]="spec.selected" (change)="toggleSpec(spec, $any($event.target).checked)" />
+                  </td>
+                  <td class="px-4 py-3 text-text">
+                    <div class="font-semibold">{{ spec.name }}</div>
+                    <div class="text-[11px] text-text-dim">{{ spec.id }}</div>
+                  </td>
+                  <td class="px-4 py-3 text-text-dim">{{ spec.description || '—' }}</td>
+                  <td class="px-4 py-3">
+                    <span class="rounded-full border border-border-subtle bg-white/5 px-2 py-0.5 text-xs text-text">{{
+                      spec.module }}</span>
+                  </td>
+                  <td class="px-4 py-3 text-text-dim">{{ spec.lastRun || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex flex-wrap items-center justify-end gap-2 px-6 py-3 text-xs text-text-dim">
+            <div class="flex items-center gap-2">
+              <span>Hiển thị</span>
+              <div
+                class="flex h-8 items-center justify-between rounded-lg border border-border-subtle bg-white/5 px-3 text-xs text-text">
+                <span>{{ pageSize }}</span>
+                <select [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange($event)" class="sr-only"
+                  aria-label="Chọn page size">
+                  <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+                </select>
+                <span class="text-text-dim">v</span>
+              </div>
+              <span>spec / trang</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span>Tổng số spec: {{ totalItems }}</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <button type="button"
+                class="h-8 w-8 rounded-lg border border-border-subtle bg-white/5 text-text-dim transition hover:bg-white/10 disabled:opacity-50"
+                (click)="onPageChange(currentPage - 1)" [disabled]="currentPage === 1">
+                ‹
+              </button>
+              <button *ngFor="let page of pageNumbers" type="button"
+                class="h-8 min-w-8 rounded-lg border border-border-subtle bg-white/5 px-2 text-xs transition hover:bg-white/10"
+                [class.bg-white/15]="page === currentPage" [class.text-text]="page === currentPage"
+                [class.text-text-dim]="page !== currentPage" (click)="onPageChange(page)">
+                {{ page }}
+              </button>
+              <button type="button"
+                class="h-8 w-8 rounded-lg border border-border-subtle bg-white/5 text-text-dim transition hover:bg-white/10 disabled:opacity-50"
+                (click)="onPageChange(currentPage + 1)"
+                [disabled]="currentPage >= (totalItems + pageSize - 1) / pageSize">
+                ›
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right: Environment -->
+        <section class="space-y-4 px-6 py-4 xl:col-span-3">
+          <div class="rounded-2xl border border-border-subtle bg-white/5 p-4 shadow-soft/20">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-semibold text-text">Môi trường chạy</p>
+                <p class="text-xs text-text-dim">Chọn project, env, browser/device.</p>
+              </div>
+              <span class="rounded-full bg-white/10 px-2 py-1 text-[11px] text-text-dim">Bắt buộc</span>
+            </div>
+            <div class="mt-3 space-y-3 text-sm">
+              <label class="space-y-1">
+                <span class="text-xs text-text-dim">Project</span>
+                <div
+                  class="flex h-10 items-center justify-between rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text">
+                  <span>{{ envForm.project || 'Chọn project...' }}</span>
+                  <select [(ngModel)]="envForm.project" class="sr-only" aria-label="Chọn project">
+                    <option value="">Chọn project...</option>
+                    <option *ngFor="let pj of projectOptions | slice:1" [value]="pj">{{ pj }}</option>
+                  </select>
+                  <span class="text-text-dim">v</span>
+                </div>
+              </label>
+              <label class="space-y-1">
+                <span class="text-xs text-text-dim">Environment</span>
+                <div
+                  class="flex h-10 items-center justify-between rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text">
+                  <span>{{ envForm.environment || 'Chọn môi trường (DEV/UAT/PROD...)' }}</span>
+                  <select [(ngModel)]="envForm.environment" class="sr-only" aria-label="Chọn môi trường">
+                    <option value="">Chọn môi trường (DEV/UAT/PROD...)</option>
+                    <option *ngFor="let env of environmentOptions | slice:1" [value]="env">{{ env }}</option>
+                  </select>
+                  <span class="text-text-dim">v</span>
+                </div>
+              </label>
+              <label class="space-y-1">
+                <span class="text-xs text-text-dim">Browser / Platform</span>
+                <div
+                  class="flex h-10 items-center justify-between rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text">
+                  <span>{{ envForm.browser || 'Chrome / Firefox / Mobile...' }}</span>
+                  <select [(ngModel)]="envForm.browser" class="sr-only" aria-label="Chọn browser">
+                    <option value="">Chrome / Firefox / Mobile...</option>
+                    <option *ngFor="let br of browserOptions | slice:1" [value]="br">{{ br }}</option>
+                  </select>
+                  <span class="text-text-dim">v</span>
+                </div>
+                <p class="text-[11px] text-text-dim">Mặc định chọn Chrome. Cho phép đổi nếu project hỗ trợ.</p>
+              </label>
+              <label class="space-y-1">
+                <span class="text-xs text-text-dim">Device profile</span>
+                <div
+                  class="flex h-10 items-center justify-between rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text">
+                  <span>{{ envForm.device || 'Desktop / iPhone / Android...' }}</span>
+                  <select [(ngModel)]="envForm.device" class="sr-only" aria-label="Chọn device">
+                    <option value="">Desktop / iPhone / Android...</option>
+                    <option *ngFor="let dev of deviceOptions | slice:1" [value]="dev">{{ dev }}</option>
+                  </select>
+                  <span class="text-text-dim">v</span>
+                </div>
+                <p class="text-[11px] text-text-dim">Danh sách device hiển thị theo project (TODO: load theo project).
+                </p>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="xl:col-span-12 border-t border-white/10 bg-bg p-6 space-y-4">
+          <div class="flex flex-col gap-2">
+            <p class="text-sm font-semibold text-text">Chế độ chạy</p>
+            <p class="text-xs text-text-dim">3 chế độ: Chạy ngay, Đặt trước 1 lần, Tạo lịch định kỳ.</p>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="rounded-full px-4 py-1.5 text-xs font-medium transition"
+                [class.bg-white/10]="mode !== 'run-now'" [class.bg-primary]="mode === 'run-now'"
+                [class.text-text]="mode === 'run-now'" [class.text-text-dim]="mode !== 'run-now'"
+                (click)="changeMode('run-now')">
+                Chạy ngay
+              </button>
+              <button type="button" class="rounded-full px-4 py-1.5 text-xs font-medium transition"
+                [class.bg-white/10]="mode !== 'schedule-once'" [class.bg-primary]="mode === 'schedule-once'"
+                [class.text-text]="mode === 'schedule-once'" [class.text-text-dim]="mode !== 'schedule-once'"
+                (click)="changeMode('schedule-once')">
+                Đặt trước
+              </button>
+              <button type="button" class="rounded-full px-4 py-1.5 text-xs font-medium transition"
+                [class.bg-white/10]="mode !== 'schedule-recurring'" [class.bg-primary]="mode === 'schedule-recurring'"
+                [class.text-text]="mode === 'schedule-recurring'" [class.text-text-dim]="mode !== 'schedule-recurring'"
+                (click)="changeMode('schedule-recurring')">
+                Tạo lịch định kỳ
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="rounded-2xl border border-border-subtle bg-white/5 p-4 shadow-soft/20 space-y-3 text-sm text-text">
+            <ng-container [ngSwitch]="mode">
+              <!-- Run now -->
+              <ng-container *ngSwitchCase="'run-now'">
+                <label class="space-y-1">
+                  <span class="text-xs text-text-dim">Tên phiên chạy</span>
+                  <input [(ngModel)]="runNowForm.runName"
+                    class="h-10 w-full rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    placeholder="Login - UAT - {timestamp}" />
+                  <p class="text-[11px] text-text-dim">Tự động gợi ý tên theo module + env + timestamp (có thể sửa).</p>
+                </label>
+                <label class="space-y-1">
+                  <span class="text-xs text-text-dim">Số luồng song song</span>
+                  <div
+                    class="flex h-10 items-center justify-between rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text">
+                    <span>{{ runNowForm.parallel }}</span>
+                    <select [(ngModel)]="runNowForm.parallel" class="sr-only" aria-label="Chọn parallel">
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                    </select>
+                    <span class="text-text-dim">v</span>
+                  </div>
+                </label>
+                <label class="flex items-center gap-2 text-sm text-text">
+                  <input type="checkbox"
+                    class="h-4 w-4 rounded border border-border-subtle bg-white/5 text-primary focus:ring-primary"
+                    [(ngModel)]="runNowForm.notifyDiscord" />
+                  Gửi notify lên Discord
+                </label>
+                <label class="flex items-center gap-2 text-sm text-text">
+                  <input type="checkbox"
+                    class="h-4 w-4 rounded border border-border-subtle bg-white/5 text-primary focus:ring-primary"
+                    [(ngModel)]="runNowForm.allowSkipFlaky" />
+                  Cho phép bỏ qua test flaky
+                </label>
+                <label class="space-y-1">
+                  <span class="text-xs text-text-dim">Ghi chú (tuỳ chọn)</span>
+                  <textarea [(ngModel)]="runNowForm.note" rows="2"
+                    class="w-full rounded-xl border border-border-subtle bg-white/5 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    placeholder="Ghi chú ngắn..."></textarea>
+                </label>
+              </ng-container>
+
+              <!-- Schedule once -->
+              <ng-container *ngSwitchCase="'schedule-once'">
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label class="space-y-1">
+                    <span class="text-xs text-text-dim">Ngày chạy</span>
+                    <div
+                      class="flex h-10 items-center rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text focus-within:ring-2 focus-within:ring-primary/40">
+                      <lucide-icon name="calendar" class="mr-2 h-4 w-4 text-text-dim"></lucide-icon>
+                      <input [(ngModel)]="scheduleOnceForm.runDate" type="date"
+                        class="w-full bg-transparent text-sm text-text focus:outline-none"
+                        aria-label="Chọn ngày chạy" />
+                    </div>
+                  </label>
+                  <label class="space-y-1">
+                    <span class="text-xs text-text-dim">Giờ chạy</span>
+                    <div
+                      class="flex h-10 items-center rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text focus-within:ring-2 focus-within:ring-primary/40">
+                      <lucide-icon name="clock-3" class="mr-2 h-4 w-4 text-text-dim"></lucide-icon>
+                      <input [(ngModel)]="scheduleOnceForm.runTime" type="time"
+                        class="w-full bg-transparent text-sm text-text focus:outline-none" aria-label="Chọn giờ chạy" />
+                    </div>
+                  </label>
+                </div>
+                <label class="space-y-1">
+                  <span class="text-xs text-text-dim">Tên phiên chạy</span>
+                  <input [(ngModel)]="scheduleOnceForm.runName"
+                    class="h-10 w-full rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    placeholder="Login - UAT - schedule-24-02-2025" />
+                </label>
+                <label class="space-y-1">
+                  <span class="text-xs text-text-dim">Số luồng song song</span>
+                  <div
+                    class="flex h-10 items-center justify-between rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text">
+                    <span>{{ scheduleOnceForm.parallel }}</span>
+                    <select [(ngModel)]="scheduleOnceForm.parallel" class="sr-only" aria-label="Chọn parallel">
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                    </select>
+                    <span class="text-text-dim">v</span>
+                  </div>
+                </label>
+                <label class="flex items-center gap-2 text-sm text-text">
+                  <input type="checkbox"
+                    class="h-4 w-4 rounded border border-border-subtle bg-white/5 text-primary focus:ring-primary"
+                    [(ngModel)]="scheduleOnceForm.notifyDiscord" />
+                  Gửi notify lên Discord
+                </label>
+                <label class="flex items-center gap-2 text-sm text-text">
+                  <input type="checkbox"
+                    class="h-4 w-4 rounded border border-border-subtle bg-white/5 text-primary focus:ring-primary"
+                    [(ngModel)]="scheduleOnceForm.allowSkipFlaky" />
+                  Cho phép bỏ qua test flaky
+                </label>
+                <label class="space-y-1">
+                  <span class="text-xs text-text-dim">Ghi chú</span>
+                  <textarea [(ngModel)]="scheduleOnceForm.note" rows="2"
+                    class="w-full rounded-xl border border-border-subtle bg-white/5 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/40"></textarea>
+                </label>
+              </ng-container>
+
+              <!-- Recurring -->
+              <ng-container *ngSwitchCase="'schedule-recurring'">
+                <label class="space-y-1">
+                  <span class="text-xs text-text-dim">Kiểu lặp</span>
+                  <div
+                    class="flex h-10 items-center justify-between rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text">
+                    <span>{{ recurringForm.repeatType }}</span>
+                    <select [(ngModel)]="recurringForm.repeatType" class="sr-only" aria-label="Chọn kiểu lặp">
+                      <option>Hàng ngày</option>
+                      <option>Hàng tuần</option>
+                      <option>Hàng tháng</option>
+                    </select>
+                    <span class="text-text-dim">v</span>
+                  </div>
+                </label>
+                <label class="space-y-1">
+                  <span class="text-xs text-text-dim">Giờ chạy</span>
+                  <div
+                    class="flex h-10 items-center rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text focus-within:ring-2 focus-within:ring-primary/40">
+                    <lucide-icon name="clock-3" class="mr-2 h-4 w-4 text-text-dim"></lucide-icon>
+                    <input [(ngModel)]="recurringForm.runTime" type="time"
+                      class="w-full bg-transparent text-sm text-text focus:outline-none" aria-label="Chọn giờ chạy" />
+                  </div>
+                </label>
+                <div *ngIf="recurringForm.repeatType === 'Hàng tuần'" class="space-y-2">
+                  <p class="text-xs text-text-dim">Ngày trong tuần</p>
+                  <div class="flex flex-wrap gap-2">
+                    <button *ngFor="let day of ['T2','T3','T4','T5','T6','T7','CN']" type="button"
+                      class="rounded-full border border-border-subtle px-3 py-1 text-xs"
+                      [class.bg-primary/20]="recurringForm.daysOfWeek.has(day)"
+                      [class.text-primary]="recurringForm.daysOfWeek.has(day)" (click)="toggleDay(day)">
+                      {{ day }}
+                    </button>
+                  </div>
+                </div>
+                <label *ngIf="recurringForm.repeatType === 'Hàng tháng'" class="space-y-1">
+                  <span class="text-xs text-text-dim">Ngày trong tháng</span>
+                  <div
+                    class="flex h-10 items-center rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text focus-within:ring-2 focus-within:ring-primary/40">
+                    <input [(ngModel)]="recurringForm.dayOfMonth" type="number" min="1" max="31"
+                      class="w-full bg-transparent text-sm text-text focus:outline-none" placeholder="Ví dụ: 1" />
+                  </div>
+                </label>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label class="space-y-1">
+                    <span class="text-xs text-text-dim">Bắt đầu từ</span>
+                    <div
+                      class="flex h-10 items-center rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text focus-within:ring-2 focus-within:ring-primary/40">
+                      <lucide-icon name="calendar" class="mr-2 h-4 w-4 text-text-dim"></lucide-icon>
+                      <input [(ngModel)]="recurringForm.startDate" type="date"
+                        class="w-full bg-transparent text-sm text-text focus:outline-none"
+                        aria-label="Chọn ngày bắt đầu" />
+                    </div>
+                  </label>
+                  <label class="space-y-1">
+                    <span class="text-xs text-text-dim">Kết thúc</span>
+                    <div
+                      class="flex h-10 items-center rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text">
+                      <span>
+                        {{
+                        recurringForm.endCondition === 'none'
+                        ? 'Không giới hạn'
+                        : recurringForm.endCondition === 'count'
+                        ? 'Sau N lần'
+                        : 'Đến ngày'
+                        }}
+                      </span>
+                      <select [(ngModel)]="recurringForm.endCondition" class="sr-only" aria-label="Chọn kết thúc">
+                        <option value="none">Không giới hạn</option>
+                        <option value="count">Sau N lần chạy</option>
+                        <option value="date">Đến ngày cụ thể</option>
+                      </select>
+                      <span class="text-text-dim">v</span>
+                    </div>
+                  </label>
+                </div>
+                <label *ngIf="recurringForm.endCondition === 'count'" class="space-y-1">
+                  <span class="text-xs text-text-dim">Số lần chạy</span>
+                  <input [(ngModel)]="recurringForm.endAfterRuns" type="number" min="1"
+                    class="h-10 w-full rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/40" />
+                </label>
+                <label *ngIf="recurringForm.endCondition === 'date'" class="space-y-1">
+                  <span class="text-xs text-text-dim">Ngày kết thúc</span>
+                  <div
+                    class="flex h-10 items-center rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text focus-within:ring-2 focus-within:ring-primary/40">
+                    <lucide-icon name="calendar" class="mr-2 h-4 w-4 text-text-dim"></lucide-icon>
+                    <input [(ngModel)]="recurringForm.endDate" type="date"
+                      class="w-full bg-transparent text-sm text-text focus:outline-none"
+                      aria-label="Chọn ngày kết thúc" />
+                  </div>
+                </label>
+                <label class="space-y-1">
+                  <span class="text-xs text-text-dim">Tên job định kỳ</span>
+                  <input [(ngModel)]="recurringForm.jobName"
+                    class="h-10 w-full rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    placeholder="Login - UAT - daily-08h" />
+                </label>
+                <label class="space-y-1">
+                  <span class="text-xs text-text-dim">Số luồng song song</span>
+                  <div
+                    class="flex h-10 items-center justify-between rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text">
+                    <span>{{ recurringForm.parallel }}</span>
+                    <select [(ngModel)]="recurringForm.parallel" class="sr-only" aria-label="Chọn parallel">
+                      <option value="1">1</option>
+                      <option value="2">2</option>
+                      <option value="3">3</option>
+                      <option value="4">4</option>
+                    </select>
+                    <span class="text-text-dim">v</span>
+                  </div>
+                </label>
+                <label class="flex items-center gap-2 text-sm text-text">
+                  <input type="checkbox"
+                    class="h-4 w-4 rounded border border-border-subtle bg-white/5 text-primary focus:ring-primary"
+                    [(ngModel)]="recurringForm.notifyDiscord" />
+                  Gửi notify lên Discord
+                </label>
+                <label class="flex items-center gap-2 text-sm text-text">
+                  <input type="checkbox"
+                    class="h-4 w-4 rounded border border-border-subtle bg-white/5 text-primary focus:ring-primary"
+                    [(ngModel)]="recurringForm.allowSkipFlaky" />
+                  Cho phép bỏ qua test flaky
+                </label>
+              </ng-container>
+            </ng-container>
+          </div>
+        </section>
+      </div>
+
+      <!-- Schedule section inside body -->
+
+    </div>
+
+    <footer
+      class="flex flex-col gap-3 border-t border-white/10 bg-bg/80 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="text-xs text-text-dim">
+        <span>{{ selectedCount }} spec đã chọn</span>
+        <span class="mx-2 text-text-soft">•</span>
+        <span>Project/Env bắt buộc</span>
+      </div>
+      <div class="flex flex-wrap gap-2 text-sm">
+        <button type="button"
+          class="inline-flex h-10 items-center gap-2 rounded-xl border border-border-subtle bg-white/5 px-4 font-medium text-text transition hover:bg-white/10"
+          (click)="closeModal()">
+          Hủy
+        </button>
+        <button type="button"
+          class="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 font-semibold text-text transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-60"
+          [disabled]="!canSubmit()" (click)="submitAction()">
+          {{ primaryLabel }}
+        </button>
+      </div>
+    </footer>
+  </div>
+</div>

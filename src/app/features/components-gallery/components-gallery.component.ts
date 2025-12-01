@@ -142,6 +142,11 @@ interface GallerySection {
               <div>
                 <h3 class="text-sm font-semibold text-text">{{ section.title }}</h3>
                 <p class="text-xs text-text-dim">{{ section.description }}</p>
+                <span
+                  class="mt-1 inline-flex rounded-full border border-border-subtle bg-white/5 px-2 py-0.5 text-[11px] uppercase tracking-wide text-text-dim"
+                >
+                  {{ section.id }}
+                </span>
               </div>
               <button
                 type="button"

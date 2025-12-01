@@ -1,0 +1,345 @@
+<div class="space-y-6">
+  <!-- TODO: Replace with shared breadcrumb component when available -->
+  <nav class="flex items-center gap-2 text-xs text-text-dim">
+    <a class="hover:text-text" href="#">AutoTest Portal</a>
+    <span>/</span>
+    <span class="text-text">Test Data</span>
+  </nav>
+
+  <header
+    class="flex flex-col gap-3 rounded-2xl border border-border-subtle bg-bg-elev/70 p-5 shadow-soft/30 lg:flex-row lg:items-start lg:justify-between"
+  >
+    <div class="space-y-1">
+      <h1 class="text-2xl font-semibold text-text">Dữ liệu Testcase</h1>
+      <p class="text-sm text-text-dim">Quản lý tập testcase cho các module, hỗ trợ import & thống kê ưu tiên.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2 text-xs">
+      <span class="inline-flex items-center gap-2 rounded-full border border-primary-border bg-primary-soft px-3 py-1 text-text">
+        <span class="h-2 w-2 rounded-full bg-primary"></span>
+        AutoTest Portal • Test Data
+      </span>
+      <span class="rounded-full border border-border-subtle bg-white/5 px-3 py-1 text-text-dim">ENV: DEV</span>
+    </div>
+  </header>
+
+  <section class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <article
+      *ngFor="let card of summaryCards"
+      class="rounded-2xl border border-border-subtle bg-white/5 p-4 shadow-soft/20"
+    >
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <p class="text-xs text-text-dim">{{ card.label }}</p>
+          <p class="mt-2 text-2xl font-semibold text-text">{{ card.value | number }}</p>
+        </div>
+        <span
+          class="rounded-full px-3 py-1 text-xs font-medium"
+          [ngClass]="{
+            'bg-primary-soft border border-primary-border text-text-badge-primary': card.tone === 'primary',
+            'bg-danger-soft border border-danger-border text-text-badge-danger': card.tone === 'danger',
+            'bg-warn-soft border border-warn-border text-text-badge-warn': card.tone === 'warn',
+            'bg-success-soft border border-success-border text-text-badge-success': card.tone === 'success'
+          }"
+        >
+          {{ card.badge }}
+        </span>
+      </div>
+    </article>
+  </section>
+
+  <section class="rounded-2xl border border-border-subtle bg-white/5 p-4 shadow-soft/30">
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+      <label class="space-y-1 text-sm text-text-dim">
+        <span>Tìm kiếm</span>
+        <div
+          class="flex h-10 items-center rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text focus-within:ring-2 focus-within:ring-primary/40"
+        >
+          <input
+            [(ngModel)]="filters.searchText"
+            type="search"
+            class="w-full bg-transparent text-text placeholder:text-text-faint focus:outline-none"
+            placeholder="Tìm theo ID, tiêu đề, tag..."
+          />
+          <button
+            type="button"
+            class="text-xs text-text-dim hover:text-text"
+            (click)="filters.searchText = ''"
+            *ngIf="filters.searchText"
+          >
+            Clear
+          </button>
+        </div>
+      </label>
+
+      <label class="space-y-1 text-sm text-text-dim">
+        <span>Ưu tiên</span>
+        <div class="flex h-10 items-center justify-between rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text">
+          <span>{{ filters.priority === 'all' ? 'Tất cả' : filters.priority }}</span>
+          <select
+            [(ngModel)]="filters.priority"
+            class="sr-only"
+            (change)="applyFilters()"
+            aria-label="Chọn ưu tiên"
+          >
+            <option value="all">Tất cả</option>
+            <option *ngFor="let p of filterOptions.priority | slice:1" [value]="p">{{ p }}</option>
+          </select>
+          <span class="text-text-dim">v</span>
+        </div>
+      </label>
+
+      <label class="space-y-1 text-sm text-text-dim">
+        <span>Tag</span>
+        <div class="flex h-10 items-center justify-between rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text">
+          <span>{{ filters.tag === 'all' ? 'Tất cả' : filters.tag }}</span>
+          <select
+            [(ngModel)]="filters.tag"
+            class="sr-only"
+            (change)="applyFilters()"
+            aria-label="Chọn tag"
+          >
+            <option value="all">Tất cả</option>
+            <option *ngFor="let tag of filterOptions.tag | slice:1" [value]="tag">{{ tag }}</option>
+          </select>
+          <span class="text-text-dim">v</span>
+        </div>
+      </label>
+
+      <label class="space-y-1 text-sm text-text-dim">
+        <span>Dự án</span>
+        <div class="flex h-10 items-center justify-between rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text">
+          <span>{{ filters.project === 'all' ? 'Tất cả' : filters.project }}</span>
+          <select
+            [(ngModel)]="filters.project"
+            class="sr-only"
+            (change)="applyFilters()"
+            aria-label="Chọn dự án"
+          >
+            <option value="all">Tất cả</option>
+            <option *ngFor="let pj of filterOptions.project | slice:1" [value]="pj">{{ pj }}</option>
+          </select>
+          <span class="text-text-dim">v</span>
+        </div>
+      </label>
+
+      <div class="flex items-end justify-start gap-2 md:justify-end">
+        <button
+          type="button"
+          class="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-text transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+          (click)="applyFilters()"
+        >
+          Tìm kiếm
+        </button>
+        <button
+          type="button"
+          class="inline-flex h-10 items-center gap-2 rounded-xl border border-border-subtle bg-white/5 px-4 text-sm font-medium text-text transition hover:bg-white/10"
+          (click)="resetFilters()"
+        >
+          Làm mới
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid grid-cols-1 gap-4 lg:grid-cols-12">
+    <article class="space-y-3 rounded-2xl border border-border-subtle bg-white/5 p-4 shadow-soft/30 lg:col-span-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-semibold text-text">Danh sách module</p>
+          <p class="text-xs text-text-dim">Chọn module để xem testcase</p>
+        </div>
+        <span class="rounded-full bg-white/5 px-2 py-1 text-xs text-text-dim">{{ modules.length }} module</span>
+      </div>
+
+      <div class="divide-y divide-border-soft rounded-xl border border-border-subtle bg-bg">
+        <button
+          *ngFor="let module of modules"
+          type="button"
+          class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-white/5"
+          [ngClass]="{ 'bg-primary/10 border-l-2 border-primary text-text': module.code === selectedModule }"
+          (click)="selectModule(module.code)"
+        >
+          <div class="flex items-center gap-3">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-sm font-semibold text-text">
+              {{ module.code }}
+            </span>
+            <div>
+              <p class="text-sm font-medium text-text">{{ module.name }}</p>
+              <p class="text-xs text-text-dim">{{ module.testcaseCount }} testcase</p>
+            </div>
+          </div>
+          <span class="rounded-full bg-white/5 px-3 py-1 text-xs text-text-dim">Chọn</span>
+        </button>
+      </div>
+    </article>
+
+    <article class="space-y-4 rounded-2xl border border-border-subtle bg-white/5 p-4 shadow-soft/30 lg:col-span-8">
+      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p class="text-sm font-semibold text-text">Testcase – Module: {{ currentModuleName }}</p>
+          <p class="text-xs text-text-dim">Chọn module bên trái để xem danh sách testcase tương ứng.</p>
+        </div>
+        <div class="flex flex-wrap gap-2 text-sm">
+          <button
+            type="button"
+            class="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 font-semibold text-text transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            (click)="startImport()"
+          >
+            Nhập
+          </button>
+          <button
+            type="button"
+            class="inline-flex h-10 items-center gap-2 rounded-xl border border-border-subtle bg-white/5 px-4 font-medium text-text transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            (click)="openHistory()"
+          >
+            Lịch sử import
+          </button>
+        </div>
+      </div>
+
+      <div class="overflow-hidden rounded-2xl border border-border-subtle bg-bg">
+        <ng-container *ngIf="isLoading; else dataState">
+          <div class="space-y-2 p-4">
+            <div class="h-4 w-1/3 animate-pulse rounded-full bg-white/10"></div>
+            <div class="space-y-2">
+              <div class="h-10 animate-pulse rounded-lg bg-white/5"></div>
+              <div class="h-10 animate-pulse rounded-lg bg-white/5"></div>
+              <div class="h-10 animate-pulse rounded-lg bg-white/5"></div>
+            </div>
+          </div>
+        </ng-container>
+        <ng-template #dataState>
+          <ng-container *ngIf="totalItems > 0; else emptyState">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="text-xs uppercase tracking-wide text-text-dim">
+                  <tr class="border-b border-white/10 text-left">
+                    <th class="px-4 py-3">ID</th>
+                    <th class="px-4 py-3">Tiêu đề</th>
+                    <th class="px-4 py-3">Ưu tiên</th>
+                    <th class="px-4 py-3">Tag</th>
+                    <th class="px-4 py-3">Module</th>
+                    <th class="px-4 py-3">Cập nhật</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                  <tr *ngFor="let row of pagedTestcases" class="transition hover:bg-white/5">
+                    <td class="px-4 py-3 font-medium text-text">{{ row.id }}</td>
+                    <td class="px-4 py-3 text-text">{{ row.title }}</td>
+                    <td class="px-4 py-3">
+                      <span class="rounded-full px-2.5 py-0.5 text-xs font-medium" [ngClass]="priorityBadgeClasses(row.priority)">
+                        {{ row.priority }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3">
+                      <div class="flex flex-wrap gap-1">
+                        <span
+                          *ngFor="let tag of row.tags"
+                          class="rounded-full border border-border-subtle bg-white/5 px-2 py-0.5 text-[11px] text-text-dim"
+                        >
+                          {{ tag }}
+                        </span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-text-dim">{{ row.module }}</td>
+                    <td class="px-4 py-3 text-text">{{ row.updatedAt }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-4 py-3 text-xs text-text-dim">
+              <!-- TODO: Replace with shared pagination component from navigation set when available -->
+              <span>Trang {{ currentPage }} / {{ totalPages }} • {{ totalItems }} mục</span>
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  class="h-8 w-8 rounded-lg border border-border-subtle bg-white/5 text-text-dim transition hover:bg-white/10 disabled:opacity-50"
+                  (click)="onPageChange(currentPage - 1)"
+                  [disabled]="currentPage === 1"
+                >
+                  ‹
+                </button>
+                <button
+                  *ngFor="let page of pageNumbers"
+                  type="button"
+                  class="h-8 min-w-8 rounded-lg border border-border-subtle bg-white/5 px-2 text-xs transition hover:bg-white/10"
+                  [class.bg-white/15]="page === currentPage"
+                  [class.text-text]="page === currentPage"
+                  [class.text-text-dim]="page !== currentPage"
+                  (click)="onPageChange(page)"
+                >
+                  {{ page }}
+                </button>
+                <button
+                  type="button"
+                  class="h-8 w-8 rounded-lg border border-border-subtle bg-white/5 text-text-dim transition hover:bg-white/10 disabled:opacity-50"
+                  (click)="onPageChange(currentPage + 1)"
+                  [disabled]="currentPage === totalPages"
+                >
+                  ›
+                </button>
+              </div>
+            </div>
+          </ng-container>
+          <ng-template #emptyState>
+            <div class="space-y-2 px-4 py-10 text-center text-sm text-text-dim">
+              <p class="text-text">Chưa có testcase phù hợp</p>
+              <p class="text-xs">Thử thay đổi bộ lọc hoặc chọn module khác.</p>
+            </div>
+          </ng-template>
+        </ng-template>
+      </div>
+    </article>
+  </section>
+</div>
+
+<div
+  *ngIf="showHistoryModal"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+  (click)="closeHistory()"
+>
+  <div
+    class="w-full max-w-2xl rounded-2xl border border-border-subtle bg-bg-elev p-6 shadow-soft/60"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-lg font-semibold text-text">Lịch sử import testcase</p>
+        <p class="text-sm text-text-dim">Nhật ký import theo thời gian, giúp truy vết thay đổi testcase.</p>
+      </div>
+      <button
+        type="button"
+        class="h-9 w-9 rounded-full border border-border-subtle bg-white/5 text-text transition hover:bg-white/10"
+        (click)="closeHistory()"
+        aria-label="Đóng modal"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="mt-4 space-y-3">
+      <article
+        *ngFor="let item of importHistory"
+        class="rounded-xl border border-border-subtle bg-white/5 p-4 text-sm shadow-soft/20"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <p class="font-semibold text-text">{{ item.title }}</p>
+          <span class="rounded-full bg-white/10 px-3 py-1 text-xs text-text-dim">{{ item.badge }}</span>
+        </div>
+        <ul class="mt-2 space-y-1 text-xs text-text-dim">
+          <li *ngFor="let meta of item.meta">• {{ meta }}</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="mt-5 flex justify-end">
+      <button
+        type="button"
+        class="inline-flex h-10 items-center gap-2 rounded-xl border border-border-subtle bg-white/5 px-4 text-sm font-medium text-text transition hover:bg-white/10"
+        (click)="closeHistory()"
+      >
+        Đóng
+      </button>
+    </div>
+  </div>
+</div>

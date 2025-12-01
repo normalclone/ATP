@@ -4,6 +4,7 @@ import { HeaderComponent } from '../../shared/components/header/header.component
 import { SidebarComponent } from '../../shared/components/sidebar/sidebar.component';
 import { MobileDrawerComponent } from '../../shared/components/mobile-drawer/mobile-drawer.component';
 import { NotificationDrawerComponent } from '../../shared/components/notification-drawer/notification-drawer.component';
+import { RunScheduleModalComponent } from '../../shared/components/run-schedule-modal/run-schedule-modal.component';
 
 @Component({
   selector: 'app-main-layout',
@@ -14,6 +15,7 @@ import { NotificationDrawerComponent } from '../../shared/components/notificatio
     SidebarComponent,
     MobileDrawerComponent,
     NotificationDrawerComponent,
+    RunScheduleModalComponent,
   ],
   template: `
     <div class="min-h-screen bg-gradient-to-b from-bg via-bg to-bg-deep text-text">
@@ -49,6 +51,12 @@ import { NotificationDrawerComponent } from '../../shared/components/notificatio
         [open]="notificationsOpen"
         (close)="closeNotifications()"
       ></app-notification-drawer>
+
+      <app-run-schedule-modal
+        [open]="runScheduleOpen"
+        (close)="closeRunSchedule()"
+        (submit)="closeRunSchedule()"
+      ></app-run-schedule-modal>
     </div>
   `,
 })
@@ -56,6 +64,7 @@ export class MainLayoutComponent {
   isSuperAdmin = false;
   mobileMenuOpen = false;
   notificationsOpen = false;
+  runScheduleOpen = false;
 
   toggleMobileMenu() {
     this.mobileMenuOpen = !this.mobileMenuOpen;
@@ -82,6 +91,10 @@ export class MainLayoutComponent {
   }
 
   onRunNow() {
-    // TODO: trigger run now flow
+    this.runScheduleOpen = true;
+  }
+
+  closeRunSchedule() {
+    this.runScheduleOpen = false;
   }
 }
