@@ -5,7 +5,8 @@ export type NavigationIcon =
   | 'calendar-clock'
   | 'alert-triangle'
   | 'users'
-  | 'layers';
+  | 'layers'
+  | 'settings';
 
 export interface NavigationItem {
   label: string;
@@ -17,6 +18,7 @@ export interface NavigationItem {
 export const NAVIGATION_ITEMS: NavigationItem[] = [
   { label: 'Tổng quan', route: '/dashboard', icon: 'gauge', exact: true },
   { label: 'Dữ liệu test', route: '/testcases', icon: 'database', exact: true },
+  { label: 'Cấu hình test suite', route: '/suites', icon: 'settings', exact: true },
   { label: 'Report', route: '/report', icon: 'bar-chart-3', exact: true },
   { label: 'Lịch chạy', route: '/schedulers', icon: 'calendar-clock', exact: true },
   { label: 'Cảnh báo', route: '/alerts', icon: 'alert-triangle', exact: true },

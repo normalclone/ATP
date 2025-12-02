@@ -58,6 +58,11 @@ export const routes: Routes = [
             (m) => m.ComponentsGalleryComponent
           ),
       },
+      {
+        path: 'suites',
+        loadComponent: () =>
+          import('./pages/test-suites/test-suites.component').then((m) => m.TestSuitesComponent),
+      },
     ],
   },
   {
