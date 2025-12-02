@@ -25,6 +25,8 @@ import { RunScheduleModalComponent } from '../../shared/components/run-schedule-
         (projectClick)="onProjectClick()"
         (search)="onSearch($event)"
         (runNow)="onRunNow()"
+        [envValue]="env"
+        (envChange)="env = $event"
       ></app-header>
 
       <div
@@ -62,6 +64,7 @@ import { RunScheduleModalComponent } from '../../shared/components/run-schedule-
 })
 export class MainLayoutComponent {
   isSuperAdmin = false;
+  env = 'dev';
   mobileMenuOpen = false;
   notificationsOpen = false;
   runScheduleOpen = false;

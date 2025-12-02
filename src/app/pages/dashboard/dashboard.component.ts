@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
@@ -18,6 +18,7 @@ interface TrendPoint {
   pass: number;
   fail: number;
 }
+type TrendMetric = 'pass' | 'fail';
 
 interface RunActivity {
   id: string;
@@ -51,6 +52,15 @@ interface JobStatus {
   lastRun: string;
 }
 
+interface TestcaseDetail {
+  id: string;
+  name: string;
+  preCondition: string;
+  priority: string;
+  updatedAt: string;
+  status: string;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -61,6 +71,7 @@ interface JobStatus {
 export class DashboardComponent {
   selectedProject = 'DVCLT';
   env = 'STG';
+  @ViewChild('trendChartArea') trendChartArea?: ElementRef<HTMLElement>;
   constructor(private sanitizer: DomSanitizer) {}
 
   kpis: DashboardKpi[] = [
@@ -163,7 +174,37 @@ export class DashboardComponent {
     { name: 'Smoke on Merge', status: 'pass', lastRun: 'Hôm qua 17:20' },
   ];
 
-  hoveredPoint: TrendPoint | null = null;
+  testcaseDetails: Record<string, TestcaseDetail> = {
+    TC_LOGIN_006: {
+      id: 'TC_LOGIN_006',
+      name: 'Dang nhap nhieu lan sai lien tiep (lock account)',
+      preCondition: 'Nguoi dung co tai khoan hop le, o trang dang nhap.',
+      priority: 'Medium',
+      updatedAt: '29/12/2024 - Phuc',
+      status: 'fail',
+    },
+    TC_CITIZEN_012: {
+      id: 'TC_CITIZEN_012',
+      name: 'Khong load duoc thong tin dan cu khi timeout API',
+      preCondition: 'Nguoi dung o trang thong tin dan cu, API dang timeout.',
+      priority: 'High',
+      updatedAt: '30/01/2025 - Linh',
+      status: 'fail',
+    },
+    TC_PAYMENT_004: {
+      id: 'TC_PAYMENT_004',
+      name: 'Thanh toan that bai nhung van tru tien',
+      preCondition: 'Nguoi dung da dat hang thanh cong va den buoc thanh toan.',
+      priority: 'High',
+      updatedAt: '28/01/2025 - Quang',
+      status: 'fail',
+    },
+  };
+
+  selectedTestcaseDetail: TestcaseDetail | null = null;
+  showTestcaseDetailModal = false;
+
+  hoveredBar: { point: TrendPoint; metric: TrendMetric } | null = null;
   hoverPos = { x: 0, y: 0 };
 
   selectedRun: RunActivity | null = null;
@@ -224,19 +265,40 @@ export class DashboardComponent {
     return 'text-muted';
   }
 
-  showTrendHover(point: TrendPoint, event: MouseEvent) {
-    this.hoveredPoint = point;
+  showTrendHover(point: TrendPoint, metric: TrendMetric, event: MouseEvent) {
+    this.hoveredBar = { point, metric };
     this.updateHoverPos(event);
   }
 
   updateHoverPos(event: MouseEvent) {
+    const container = this.trendChartArea?.nativeElement;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
     this.hoverPos = {
-      x: event.offsetX + 12,
-      y: event.offsetY + 12,
+      x: event.clientX - rect.left + 12,
+      y: event.clientY - rect.top + 12,
     };
   }
 
   hideTrendHover() {
-    this.hoveredPoint = null;
+    this.hoveredBar = null;
+  }
+
+  onOpenTestcase(testcase: HighlightTest) {
+    const detail = this.testcaseDetails[testcase.id];
+    this.selectedTestcaseDetail = detail ?? {
+      id: testcase.id,
+      name: testcase.title,
+      preCondition: 'Chua khai bao tien dieu kien.',
+      priority: 'Medium',
+      updatedAt: 'Chua cap nhat',
+      status: testcase.type === 'failed' ? 'fail' : 'flaky',
+    };
+    this.showTestcaseDetailModal = true;
+  }
+
+  closeTestcaseDetail() {
+    this.showTestcaseDetailModal = false;
+    this.selectedTestcaseDetail = null;
   }
 }

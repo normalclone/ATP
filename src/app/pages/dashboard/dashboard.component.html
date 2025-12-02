@@ -5,31 +5,24 @@
       <h1 class="page-title">Dashboard – Automation</h1>
       <p class="page-subtitle">Tổng quan chất lượng & hoạt động của automation trong 7–30 ngày gần nhất.</p>
     </div>
-    <div class="header-right">
-      <div class="project-select">
-        <label>Project</label>
-        <select [(ngModel)]="selectedProject" (ngModelChange)="onProjectChange($event)">
-          <option value="DVCLT">DVCLT</option>
-          <option value="CSKCB_V2">CSKCB_V2</option>
-          <option value="CTDL">CTDL</option>
-          <option value="TWD">TWD</option>
-        </select>
-      </div>
-      <span class="env-badge">ENV: {{ env }}</span>
-      <button class="btn btn-primary btn-sm" type="button" (click)="onViewFullReport()">
-        Xem report
-      </button>
-    </div>
+    <div class="header-right"></div>
   </header>
 
   <!-- SUMMARY KPIs -->
   <section class="summary-grid">
-    <article class="summary-card" *ngFor="let kpi of kpis" [ngClass]="'tone-' + (kpi.tone || 'primary')">
+    <article
+      class="summary-card"
+      *ngFor="let kpi of kpis; let i = index"
+      [ngClass]="['tone-' + (kpi.tone || 'primary'), i >= 2 ? 'tone-filled' : '']"
+    >
       <div class="summary-label">{{ kpi.label }}</div>
       <div class="summary-value">{{ kpi.value }}</div>
       <div class="summary-sub" *ngIf="kpi.subLabel">{{ kpi.subLabel }}</div>
     </article>
-    <article class="summary-card extra" [ngClass]="'tone-' + (extraKpi.tone || 'primary')">
+    <article
+      class="summary-card extra"
+      [ngClass]="['tone-' + (extraKpi.tone || 'primary'), 'tone-filled']"
+    >
       <div class="summary-label">{{ extraKpi.label }}</div>
       <div class="summary-value">{{ extraKpi.value }}</div>
       <div class="summary-sub" *ngIf="extraKpi.subLabel">{{ extraKpi.subLabel }}</div>
@@ -47,8 +40,9 @@
       </div>
       <div
         class="chart-placeholder"
+        #trendChartArea
         (mouseleave)="hideTrendHover()"
-        (mousemove)="hoveredPoint && updateHoverPos($event)"
+        (mousemove)="hoveredBar && updateHoverPos($event)"
       >
         <div class="chart-legend">
           <span class="legend-item legend-pass">Pass</span>
@@ -59,26 +53,38 @@
             class="chart-row"
             *ngFor="let point of trend"
             [attr.aria-label]="'Ngày ' + point.date + ': Pass ' + point.pass + ', Fail ' + point.fail"
-            (mouseenter)="showTrendHover(point, $event)"
-            (mousemove)="showTrendHover(point, $event)"
           >
             <div class="chart-date">{{ point.date }}</div>
             <div class="chart-bars">
-              <div class="bar bar-pass" [style.width.%]="point.pass * 8"></div>
-              <div class="bar bar-fail" [style.width.%]="point.fail * 8"></div>
+              <div
+                class="bar bar-pass"
+                [style.width.%]="point.pass * 8"
+                [attr.aria-label]="'Pass ' + point.pass + ' on ' + point.date"
+                (mouseenter)="showTrendHover(point, 'pass', $event)"
+                (mousemove)="showTrendHover(point, 'pass', $event)"
+              ></div>
+              <div
+                class="bar bar-fail"
+                [style.width.%]="point.fail * 8"
+                [attr.aria-label]="'Fail ' + point.fail + ' on ' + point.date"
+                (mouseenter)="showTrendHover(point, 'fail', $event)"
+                (mousemove)="showTrendHover(point, 'fail', $event)"
+              ></div>
             </div>
             <div class="chart-values">Pass {{ point.pass }} / Fail {{ point.fail }}</div>
           </div>
         </div>
         <div
-          *ngIf="hoveredPoint"
+          *ngIf="hoveredBar"
           class="chart-hover-floating"
           [style.left.px]="hoverPos.x"
           [style.top.px]="hoverPos.y"
         >
-          <div><strong>{{ hoveredPoint.date }}</strong></div>
-          <div>Pass: {{ hoveredPoint.pass }}</div>
-          <div>Fail: {{ hoveredPoint.fail }}</div>
+          <div><strong>{{ hoveredBar.point.date }}</strong></div>
+          <div>
+            {{ hoveredBar.metric === 'pass' ? 'Pass' : 'Fail' }}:
+            {{ hoveredBar.metric === 'pass' ? hoveredBar.point.pass : hoveredBar.point.fail }}
+          </div>
         </div>
       </div>
     </article>
@@ -153,7 +159,14 @@
         <div class="panel-sub">Một số testcase cần ưu tiên xem lại.</div>
       </div>
       <ul class="highlight-list">
-        <li class="highlight-item" *ngFor="let h of highlights">
+        <li
+          class="highlight-item"
+          *ngFor="let h of highlights"
+          role="button"
+          tabindex="0"
+          (click)="onOpenTestcase(h)"
+          (keydown.enter)="onOpenTestcase(h)"
+        >
           <div class="highlight-top">
             <span class="highlight-id">{{ h.id }}</span>
             <span
@@ -227,6 +240,42 @@
           loading="lazy"
         ></iframe>
         <div *ngIf="!safeReportUrl" class="empty-report">Run chưa có report hoặc report không tồn tại.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="showTestcaseDetailModal && selectedTestcaseDetail" class="modal-overlay">
+  <div class="modal-card">
+    <header class="modal-header">
+      <div>
+        <p class="text-lg font-semibold text-text">
+          {{ selectedTestcaseDetail.id }} - {{ selectedTestcaseDetail.name }}
+        </p>
+        <p class="text-xs text-text-dim">Testcase detail (overview)</p>
+      </div>
+      <button type="button" class="close-btn" (click)="closeTestcaseDetail()">x</button>
+    </header>
+    <div class="modal-body">
+      <div class="testcase-detail">
+        <div class="detail-block">
+          <p class="detail-label">Tien dieu kien</p>
+          <p class="detail-value">{{ selectedTestcaseDetail.preCondition }}</p>
+        </div>
+        <div class="detail-grid">
+          <div class="detail-block">
+            <p class="detail-label">Do uu tien</p>
+            <p class="detail-value strong">{{ selectedTestcaseDetail.priority }}</p>
+          </div>
+          <div class="detail-block">
+            <p class="detail-label">Ngay cap nhat</p>
+            <p class="detail-value strong">{{ selectedTestcaseDetail.updatedAt }}</p>
+          </div>
+          <div class="detail-block">
+            <p class="detail-label">Ket qua</p>
+            <p class="detail-value strong">{{ selectedTestcaseDetail.status }}</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>

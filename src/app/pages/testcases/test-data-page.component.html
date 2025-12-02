@@ -184,9 +184,7 @@
             type="button"
             class="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 font-semibold text-text transition hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             (click)="startImport()"
-          >
-            Nhập
-          </button>
+          >Import</button>
           <button
             type="button"
             class="inline-flex h-10 items-center gap-2 rounded-xl border border-border-subtle bg-white/5 px-4 font-medium text-text transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
@@ -223,7 +221,14 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-white/5">
-                  <tr *ngFor="let row of pagedTestcases" class="transition hover:bg-white/5">
+                  <tr
+                    *ngFor="let row of pagedTestcases"
+                    class="cursor-pointer transition hover:bg-white/5"
+                    role="button"
+                    tabindex="0"
+                    (click)="openTestcaseDetail(row)"
+                    (keydown.enter)="openTestcaseDetail(row)"
+                  >
                     <td class="px-4 py-3 font-medium text-text">{{ row.id }}</td>
                     <td class="px-4 py-3 text-text">{{ row.title }}</td>
                     <td class="px-4 py-3">
@@ -291,6 +296,72 @@
       </div>
     </article>
   </section>
+</div>
+
+<div
+  *ngIf="showDetailModal && selectedTestcase"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+  (click)="closeTestcaseDetail()"
+>
+  <div
+    class="w-full max-w-3xl rounded-2xl border border-border-subtle bg-bg-elev p-6 shadow-soft/60"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-lg font-semibold text-text">
+          {{ selectedTestcase.id }} - {{ selectedTestcase.title }}
+        </p>
+        <p class="text-sm text-text-dim">
+          Module: {{ selectedTestcase.module }} • Project: {{ selectedTestcase.project }}
+        </p>
+      </div>
+      <button
+        type="button"
+        class="h-9 w-9 rounded-full border border-border-subtle bg-white/5 text-text transition hover:bg-white/10"
+        (click)="closeTestcaseDetail()"
+        aria-label="Đóng chi tiết testcase"
+      >
+        ✕
+      </button>
+    </div>
+
+    <div class="mt-4 space-y-3">
+      <div class="rounded-xl border border-border-subtle bg-white/5 p-3">
+        <p class="text-xs text-text-dim">Tien dieu kien</p>
+        <p class="text-sm text-text">
+          {{ selectedTestcase.preCondition || 'Chua khai bao tien dieu kien.' }}
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div class="rounded-xl border border-border-subtle bg-white/5 p-3">
+          <p class="text-xs text-text-dim">Do uu tien</p>
+          <p class="text-sm font-semibold text-text">{{ selectedTestcase.priority }}</p>
+        </div>
+        <div class="rounded-xl border border-border-subtle bg-white/5 p-3">
+          <p class="text-xs text-text-dim">Ngay cap nhat</p>
+          <p class="text-sm font-semibold text-text">{{ selectedTestcase.updatedAt }}</p>
+        </div>
+        <div class="rounded-xl border border-border-subtle bg-white/5 p-3">
+          <p class="text-xs text-text-dim">Ket qua</p>
+          <p class="text-sm font-semibold text-text">
+            {{ selectedTestcase.status || 'Chua co ket qua' }}
+          </p>
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-lg border border-border-subtle bg-white/5 px-4 py-2 text-sm font-medium text-text transition hover:bg-white/10"
+          (click)="goToTestcaseManager()"
+        >
+          Mo trang quan ly testcase
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div

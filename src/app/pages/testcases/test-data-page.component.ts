@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 type Priority = 'High' | 'Medium' | 'Low';
@@ -11,8 +12,15 @@ interface Testcase {
   priority: Priority;
   tags: string[];
   module: string;
+  moduleCode?: string;
   project: ProjectCode;
   updatedAt: string;
+  preCondition?: string;
+  description?: string;
+  lastResult?: string;
+  owner?: string;
+  lastRunId?: string;
+  status?: 'pass' | 'fail' | 'flaky';
 }
 
 interface Module {
@@ -77,70 +85,130 @@ export class TestDataPageComponent implements OnInit {
 
   selectedModule = this.modules[0].code;
   isLoading = false;
+  showDetailModal = false;
   showHistoryModal = false;
+  selectedTestcase: Testcase | null = null;
 
   filteredTestcases: Testcase[] = [];
   pagedTestcases: Testcase[] = [];
   totalItems = 0;
   pageSize = 5;
   currentPage = 1;
-
   private allTestcases: Testcase[] = [
     {
       id: 'TC_LOGIN_001',
-      title: 'Đăng nhập với tài khoản hợp lệ',
+      title: 'Dang nhap voi tai khoan hop le',
       priority: 'High',
       tags: ['smoke'],
       module: 'Login',
+      moduleCode: 'L',
       project: 'DVCLT',
-      updatedAt: '03/02/2025 - Phúc',
+      updatedAt: '03/02/2025 - Phuc',
+      preCondition: 'Nguoi dung o trang dang nhap, co tai khoan hop le.',
+      description: 'Kiem tra dang nhap thanh cong khi thong tin hop le.',
+      status: 'pass',
+      lastRunId: '#324',
     },
     {
       id: 'TC_LOGIN_002',
-      title: 'Đăng nhập sai mật khẩu',
+      title: 'Dang nhap sai mat khau',
       priority: 'High',
       tags: ['auth'],
       module: 'Login',
+      moduleCode: 'L',
       project: 'DVCLT',
-      updatedAt: '03/02/2025 - Phúc',
+      updatedAt: '03/02/2025 - Phuc',
+      preCondition: 'Nguoi dung o trang dang nhap.',
+      description: 'Thong bao loi dung, khong lock account khi nhap sai 1 lan.',
+      status: 'pass',
+      lastRunId: '#324',
     },
     {
       id: 'TC_LOGIN_003',
-      title: 'Đăng nhập tài khoản bị khóa',
+      title: 'Dang nhap tai khoan bi khoa',
       priority: 'Medium',
       tags: ['auth'],
       module: 'Login',
+      moduleCode: 'L',
       project: 'CSKCB_V2',
-      updatedAt: '20/01/2025 - Tuyết',
+      updatedAt: '20/01/2025 - Tuyet',
+      preCondition: 'Tai khoan dang o trang thai khoa.',
+      description: 'Tai khoan khoa khong duoc dang nhap, hien thi thong bao ro rang.',
+      status: 'pass',
+      lastRunId: '#323',
     },
     {
       id: 'TC_LOGIN_004',
-      title: 'Đăng nhập khi bỏ trống username',
+      title: 'Dang nhap bo trong username',
       priority: 'Low',
       tags: ['form'],
       module: 'Login',
+      moduleCode: 'L',
       project: 'CSKCB_V2',
-      updatedAt: '15/01/2025 - Toàn',
+      updatedAt: '15/01/2025 - Toan',
+      preCondition: 'Nguoi dung o trang dang nhap.',
+      description: 'Validate truong username, hien thi loi bat buoc.',
+      status: 'pass',
+      lastRunId: '#323',
     },
     {
       id: 'TC_LOGIN_005',
-      title: 'Đăng nhập khi bỏ trống password',
+      title: 'Dang nhap bo trong password',
       priority: 'Low',
       tags: ['form'],
       module: 'Login',
+      moduleCode: 'L',
       project: 'CTDL',
-      updatedAt: '15/01/2025 - Toàn',
+      updatedAt: '15/01/2025 - Toan',
+      preCondition: 'Nguoi dung o trang dang nhap.',
+      description: 'Validate truong password, hien thi loi bat buoc.',
+      status: 'pass',
+      lastRunId: '#323',
     },
     {
       id: 'TC_LOGIN_006',
-      title: 'Đăng nhập nhiều lần sai liên tiếp (lock account)',
+      title: 'Dang nhap nhieu lan sai lien tiep (lock account)',
       priority: 'Medium',
       tags: ['security'],
       module: 'Login',
+      moduleCode: 'L',
       project: 'TWD',
-      updatedAt: '29/12/2024 - Phúc',
+      updatedAt: '29/12/2024 - Phuc',
+      preCondition: 'Nguoi dung co tai khoan hop le, o trang dang nhap.',
+      description: 'Tai khoan bi lock sau 5 lan sai, thong bao khoi tao unlock.',
+      status: 'fail',
+      lastRunId: '#325',
+    },
+    {
+      id: 'TC_CITIZEN_012',
+      title: 'Khong load duoc thong tin dan cu khi timeout API',
+      priority: 'High',
+      tags: ['regression', 'api'],
+      module: 'Citizen Info',
+      moduleCode: 'CI',
+      project: 'DVCLT',
+      updatedAt: '30/01/2025 - Linh',
+      preCondition: 'Nguoi dung o trang thong tin dan cu, API thong tin dan cu dang timeout.',
+      description: 'Xu ly fallback UI va retry khi API thong tin dan cu timeout.',
+      status: 'fail',
+      lastRunId: '#325',
+    },
+    {
+      id: 'TC_PAYMENT_004',
+      title: 'Thanh toan that bai nhung van tru tien',
+      priority: 'High',
+      tags: ['payment', 'critical'],
+      module: 'Thanh toA?n',
+      moduleCode: 'PAY',
+      project: 'DVCLT',
+      updatedAt: '28/01/2025 - Quang',
+      preCondition: 'Nguoi dung da dat hang thanh cong, chuyen sang buoc thanh toan.',
+      description: 'Rollback giao dich va thong bao nguoi dung khi payment fail.',
+      status: 'fail',
+      lastRunId: '#325',
     },
   ];
+
 
   importHistory: ImportHistory[] = [
     {
@@ -165,8 +233,16 @@ export class TestDataPageComponent implements OnInit {
     },
   ];
 
+  constructor(private route: ActivatedRoute, private router: Router) {}
+
   ngOnInit() {
     this.filterTestcases(true);
+    this.route.queryParamMap.subscribe((params) => {
+      const testcaseId = params.get('testcase');
+      if (testcaseId) {
+        this.openTestcaseDetailById(testcaseId);
+      }
+    });
   }
 
   get currentModuleName(): string {
@@ -216,6 +292,28 @@ export class TestDataPageComponent implements OnInit {
     console.log('Import triggered for module', this.currentModuleName);
   }
 
+  openTestcaseDetail(testcase: Testcase) {
+    this.selectedTestcase = testcase;
+    this.showDetailModal = true;
+  }
+
+  openTestcaseDetailById(testcaseId: string) {
+    const testcase = this.findTestcaseById(testcaseId);
+    if (!testcase) return;
+    this.syncSelectionForTestcase(testcase);
+    this.openTestcaseDetail(testcase);
+  }
+
+  closeTestcaseDetail() {
+    this.showDetailModal = false;
+    this.selectedTestcase = null;
+  }
+
+  goToTestcaseManager() {
+    this.closeTestcaseDetail();
+    this.router.navigate(['/testcases']);
+  }
+
   priorityBadgeClasses(priority: Priority) {
     switch (priority) {
       case 'High':
@@ -225,6 +323,20 @@ export class TestDataPageComponent implements OnInit {
       default:
         return 'bg-success-soft border border-success-border text-text-badge-success';
     }
+  }
+
+  private syncSelectionForTestcase(testcase: Testcase) {
+    const moduleByCode = testcase.moduleCode
+      ? this.modules.find((m) => m.code === testcase.moduleCode)
+      : undefined;
+    const moduleMatch = moduleByCode ?? this.modules.find((m) => m.name === testcase.module);
+    if (moduleMatch) this.selectedModule = moduleMatch.code;
+    this.filters.searchText = testcase.id;
+    this.filterTestcases(true);
+  }
+
+  private findTestcaseById(testcaseId: string): Testcase | undefined {
+    return this.allTestcases.find((tc) => tc.id === testcaseId);
   }
 
   private filterTestcases(resetPage = false) {

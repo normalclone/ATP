@@ -1,15 +1,73 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
+import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    LucideAngularModule,
+  imports: [CommonModule, FormsModule, LucideAngularModule, RouterModule],
+  styles: [
+    `
+      #env-select option {
+        background: var(--bg, #2b2d31);
+        color: var(--text, #e3e5e8);
+      }
+
+      .menu-item {
+        width: 100%;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        font-size: 13px;
+        color: var(--text, #e3e5e8);
+        text-decoration: none;
+        background: transparent;
+        border: 0;
+        text-align: left;
+        transition: background 120ms ease, color 120ms ease;
+      }
+
+      .menu-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .menu-item.danger {
+        color: #fca5a5;
+      }
+
+      .menu-divider {
+        height: 1px;
+        background: var(--border-border-subtle, #3a3d44);
+      }
+
+      .logout-modal {
+        background: var(--bg-elev, #2b2d31);
+        border: 1px solid var(--border-border-subtle, #3a3d44);
+        border-radius: 14px;
+        padding: 14px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+        width: 360px;
+        max-width: 90vw;
+      }
+
+      .toast-inline {
+        position: fixed;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #3fbf7f;
+        color: #0b160f;
+        padding: 10px 14px;
+        border-radius: 999px;
+        font-weight: 600;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        z-index: 110;
+      }
+    `,
   ],
   template: `
     <header class="sticky top-0 z-40 border-b border-border-soft bg-bg/80 backdrop-blur-md">
@@ -40,11 +98,21 @@ import { LucideAngularModule } from 'lucide-angular';
               <span class="truncate max-w-[160px] text-left md:max-w-[240px]" [title]="projectName">
                 {{ projectName }}
               </span>
-              <lucide-icon
-                name="chevron-down"
-                class="h-3 w-3 text-text-dim transition group-hover:text-text"
-              ></lucide-icon>
+              <lucide-icon name="chevron-down" class="h-3 w-3 text-text-dim transition group-hover:text-text"></lucide-icon>
             </button>
+
+            <div class="inline-flex items-center gap-2 rounded-lg border border-border-subtle bg-white/5 px-3 py-2 text-sm text-text">
+              <label class="text-xs text-text-dim" for="env-select">ENV</label>
+              <select
+                id="env-select"
+                [(ngModel)]="envValue"
+                (ngModelChange)="onEnvChange($event)"
+                class="bg-transparent text-text focus:outline-none"
+                aria-label="Chọn môi trường"
+              >
+                <option *ngFor="let env of envOptions" [value]="env">{{ env | uppercase }}</option>
+              </select>
+            </div>
           </div>
 
           <div class="flex items-center gap-2 md:gap-3">
@@ -91,6 +159,38 @@ import { LucideAngularModule } from 'lucide-angular';
               <span class="hidden sm:inline">Chạy/Đặt lịch</span>
               <span class="sm:hidden">Chạy</span>
             </button>
+
+            <div class="relative">
+              <button
+                type="button"
+                class="focus-ring inline-flex items-center gap-2 rounded-lg border border-border-subtle bg-white/5 px-3 py-2 text-sm font-semibold text-text"
+                (click)="toggleUserMenu()"
+                aria-haspopup="menu"
+              >
+                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-text">QA</span>
+                <span class="hidden sm:inline">QA User</span>
+                <lucide-icon name="chevron-down" class="h-3 w-3 text-text-dim"></lucide-icon>
+              </button>
+
+              <div
+                *ngIf="userMenuOpen"
+                class="absolute right-0 mt-2 w-52 overflow-hidden rounded-lg border border-border-subtle bg-bg-elev shadow-soft"
+              >
+                <a class="menu-item" routerLink="/profile">
+                  <lucide-icon name="user" class="h-4 w-4"></lucide-icon>
+                  <span>Thông tin tài khoản</span>
+                </a>
+                <a class="menu-item" routerLink="/change-password">
+                  <lucide-icon name="key" class="h-4 w-4"></lucide-icon>
+                  <span>Đổi mật khẩu</span>
+                </a>
+                <div class="menu-divider"></div>
+                <button type="button" class="menu-item danger" (click)="openLogoutConfirm()">
+                  <lucide-icon name="log-out" class="h-4 w-4"></lucide-icon>
+                  <span>Đăng xuất</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -119,20 +219,57 @@ import { LucideAngularModule } from 'lucide-angular';
         </form>
       </div>
     </header>
+
+    <div *ngIf="logoutConfirmOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" (click)="cancelLogout()">
+      <div class="logout-modal" (click)="$event.stopPropagation()">
+        <h3 class="text-lg font-semibold text-text">Đăng xuất</h3>
+        <p class="mt-2 text-sm text-text-dim">Bạn có chắc chắn muốn đăng xuất khỏi AutoTest Portal?</p>
+        <div class="mt-4 flex justify-end gap-2">
+          <button
+            type="button"
+            class="focus-ring rounded-lg border border-border-subtle bg-white/5 px-3 py-2 text-sm text-text"
+            (click)="cancelLogout()"
+          >
+            Hủy
+          </button>
+          <button
+            type="button"
+            class="focus-ring rounded-lg px-3 py-2 text-sm font-semibold text-white"
+            style="background:#d83c3e;"
+            (click)="confirmLogout()"
+          >
+            Đăng xuất
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="toastMessage" class="toast-inline">
+      {{ toastMessage }}
+    </div>
   `,
 })
 export class HeaderComponent {
   @Input() projectName = 'Automation Project';
   @Input() searchPlaceholder = 'Tìm case, report, lịch chạy…';
+  @Input() envValue = 'dev';
 
   @Output() menuToggle = new EventEmitter<void>();
   @Output() notificationsToggle = new EventEmitter<void>();
   @Output() projectClick = new EventEmitter<void>();
   @Output() search = new EventEmitter<string>();
   @Output() runNow = new EventEmitter<void>();
+  @Output() envChange = new EventEmitter<string>();
 
   searchQuery = '';
   mobileSearchOpen = false;
+  envOptions = ['prod', 'dev', 'beta', 'khac'];
+  userMenuOpen = false;
+  logoutConfirmOpen = false;
+  toastMessage = '';
+  toastTimer?: number;
+
+  constructor(private auth: AuthService, private router: Router) {}
 
   handleProjectClick() {
     this.projectClick.emit();
@@ -148,5 +285,37 @@ export class HeaderComponent {
     if (query) {
       this.search.emit(query);
     }
+  }
+
+  onEnvChange(value: string) {
+    this.envValue = value;
+    this.envChange.emit(value);
+  }
+
+  toggleUserMenu() {
+    this.userMenuOpen = !this.userMenuOpen;
+  }
+
+  openLogoutConfirm() {
+    this.userMenuOpen = false;
+    this.logoutConfirmOpen = true;
+  }
+
+  cancelLogout() {
+    this.logoutConfirmOpen = false;
+  }
+
+  confirmLogout() {
+    this.auth.logout();
+    this.logoutConfirmOpen = false;
+    this.showToast('Dang xuat thanh cong!');
+  }
+
+  private showToast(message: string) {
+    this.toastMessage = message;
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastTimer = window.setTimeout(() => {
+      this.toastMessage = '';
+    }, 3000);
   }
 }
