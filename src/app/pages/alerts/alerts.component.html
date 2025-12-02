@@ -1,0 +1,259 @@
+<div class="alerts-page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Cảnh báo &amp; Phân tích lỗi</h1>
+      <p class="page-subtitle">Theo dõi lỗi, flaky test, xu hướng và rủi ro chất lượng theo thời gian.</p>
+    </div>
+    <div class="header-actions">
+      <select [(ngModel)]="dateRange">
+        <option>7 ngày gần đây</option>
+        <option>14 ngày</option>
+        <option>30 ngày</option>
+      </select>
+      <select [(ngModel)]="projectFilter">
+        <option>Tất cả project</option>
+        <option>DVCLT</option>
+        <option>CSKCB_V2</option>
+        <option>CTDL</option>
+      </select>
+      <button class="btn btn-ghost btn-sm">Refresh</button>
+    </div>
+  </header>
+
+  <section class="summary-bar">
+    <article class="summary-card" *ngFor="let item of summaryItems" [ngClass]="item.badgeTone">
+      <p class="summary-label">{{ item.label }}</p>
+      <p class="summary-value">{{ item.value }}</p>
+      <p class="summary-sub" *ngIf="item.subLabel">{{ item.subLabel }}</p>
+    </article>
+  </section>
+
+  <section class="charts-grid">
+    <article class="panel chart-card">
+      <div class="panel-header">
+        <div>
+          <p class="panel-title">Xu hướng failed tests</p>
+          <p class="panel-sub">Số lượng test fail theo ngày trong khoảng thời gian đã chọn.</p>
+        </div>
+      </div>
+      <div class="chart-placeholder">
+        <div class="trend-list">
+          <div class="trend-row" *ngFor="let item of failureTrend">
+            <span class="trend-day">{{ item.day }}</span>
+            <div class="trend-bars">
+              <span class="bar bar-fail" [style.width.%]="item.fail * 8"></span>
+              <span class="bar bar-flaky" [style.width.%]="item.flaky * 8"></span>
+            </div>
+            <span class="trend-values">{{ item.fail }} fail / {{ item.flaky }} flaky</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel chart-card">
+      <div class="panel-header">
+        <div>
+          <p class="panel-title">Top module lỗi nhiều</p>
+          <p class="panel-sub">Top 5 module có nhiều lỗi nhất.</p>
+        </div>
+      </div>
+      <div class="chart-placeholder">
+        <div class="bar-list">
+          <div class="bar-row" *ngFor="let m of topModules">
+            <span class="bar-label">{{ m.module }}</span>
+            <div class="bar-track">
+              <span class="bar bar-fail" [style.width.%]="m.fails * 5"></span>
+            </div>
+            <span class="bar-value">{{ m.fails }}</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel chart-card">
+      <div class="panel-header">
+        <div>
+          <p class="panel-title">Phân loại lỗi</p>
+          <p class="panel-sub">Timeout, Element not found, API 5xx, Assertion, Data...</p>
+        </div>
+      </div>
+      <div class="chart-placeholder">
+        <div class="pie-list">
+          <div class="pie-row" *ngFor="let e of errorTypes">
+            <span class="pie-label">{{ e.type }}</span>
+            <span class="pie-value">{{ e.percent }}%</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel chart-card">
+      <div class="panel-header">
+        <div>
+          <p class="panel-title">Pass / Fail ratio</p>
+          <p class="panel-sub">Tỉ lệ test pass/fail/skipped.</p>
+        </div>
+      </div>
+      <div class="chart-placeholder">
+        <div class="pie-list">
+          <div class="pie-row" *ngFor="let r of passFailRatio">
+            <span class="pie-label">{{ r.label }}</span>
+            <span class="pie-value">{{ r.percent }}%</span>
+          </div>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="split">
+    <article class="panel alerts-panel">
+      <div class="panel-header">
+        <div>
+          <p class="panel-title">Danh sách cảnh báo</p>
+          <p class="panel-sub">Lọc theo mức độ, module, testcase.</p>
+        </div>
+        <div class="filters">
+          <input class="input" type="search" placeholder="Tìm theo nội dung cảnh báo, module, testcase..." />
+          <select [(ngModel)]="severityFilter">
+            <option>Tất cả</option>
+            <option>Cao</option>
+            <option>Trung bình</option>
+            <option>Thấp</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:10%;">Mức độ</th>
+              <th style="width:40%;">Cảnh báo</th>
+              <th style="width:15%;">Module</th>
+              <th style="width:10%;">Lần xuất hiện</th>
+              <th style="width:15%;">Gần nhất</th>
+              <th style="width:10%;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let alert of alerts">
+              <td>
+                <span class="badge" [ngClass]="severityClass(alert.severity)">
+                  {{ alert.severity === 'high' ? 'Cao' : alert.severity === 'medium' ? 'Trung bình' : 'Thấp' }}
+                </span>
+              </td>
+              <td>
+                <div class="text-strong">{{ alert.title }}</div>
+                <div class="text-muted">Testcase: {{ alert.testcaseKey }} • Run: {{ alert.lastRunId }}</div>
+              </td>
+              <td class="text-muted">{{ alert.module }}</td>
+              <td class="text-muted">{{ alert.occurrences }}</td>
+              <td class="text-muted">{{ alert.lastSeen }}</td>
+              <td class="text-right">
+                <button class="btn btn-ghost btn-xs" type="button" (click)="openAlertDrawer(alert)" title="Xem chi tiết">👁</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="panel right-panel">
+      <div class="panel-header">
+        <div class="panel-title">Phân tích nâng cao</div>
+        <div class="panel-sub">Flaky test • Rủi ro module • Root cause</div>
+      </div>
+      <div class="tabs">
+        <button class="tab" [class.active]="activeRightTab === 'flaky'" (click)="activeRightTab = 'flaky'">Flaky Test</button>
+        <button class="tab" [class.active]="activeRightTab === 'module'" (click)="activeRightTab = 'module'">Cảnh báo module</button>
+        <button class="tab" [class.active]="activeRightTab === 'root'" (click)="activeRightTab = 'root'">Root Cause</button>
+      </div>
+
+      <ng-container [ngSwitch]="activeRightTab">
+        <ng-container *ngSwitchCase="'flaky'">
+          <div class="panel-subtitle">Flaky Test Analyzer</div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Testcase</th>
+                  <th style="width:15%;">Flaky %</th>
+                  <th style="width:15%;">Số lần chạy</th>
+                  <th style="width:15%;">Gần nhất</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of flakyRows">
+                  <td>{{ row.testcaseKey }}</td>
+                  <td><span class="badge" [ngClass]="flakyBadgeClass(row.flakyScore)">{{ row.flakyScore }}%</span></td>
+                  <td class="text-muted">{{ row.runsCount }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="row.lastStatus === 'fail' ? 'badge-danger' : row.lastStatus === 'pass' ? 'badge-success' : 'badge-primary'">
+                      {{ row.lastStatus | uppercase }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'module'">
+          <div class="panel-subtitle">Cảnh báo theo module</div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Module</th>
+                  <th style="width:15%;">Risk</th>
+                  <th style="width:20%;">Xu hướng lỗi</th>
+                  <th style="width:20%;">Coverage (Auto)</th>
+                  <th style="width:20%;">Thay đổi gần đây</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of moduleRiskRows">
+                  <td>{{ row.module }}</td>
+                  <td><span class="badge" [ngClass]="riskBadgeClass(row.riskLevel)">{{ row.riskLevel }}</span></td>
+                  <td class="text-muted">{{ row.failureTrend }}</td>
+                  <td class="text-muted">{{ row.coverage }}</td>
+                  <td class="text-muted">{{ row.recentChanges }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </ng-container>
+
+        <ng-container *ngSwitchCase="'root'">
+          <div class="panel-subtitle">Root Cause Analysis</div>
+          <div class="rc-block" *ngFor="let block of rootCauseBlocks">
+            <div class="rc-title">{{ block.title }}</div>
+            <div class="rc-content">{{ block.content }}</div>
+          </div>
+        </ng-container>
+      </ng-container>
+    </article>
+  </section>
+</div>
+
+<div *ngIf="showAlertDrawer && selectedAlert" class="drawer-overlay">
+  <div class="drawer">
+    <header class="drawer-header">
+      <div>
+        <p class="drawer-title">{{ selectedAlert.title }}</p>
+        <p class="drawer-sub">Testcase: {{ selectedAlert.testcaseKey }} • Run: {{ selectedAlert.lastRunId }}</p>
+      </div>
+      <button class="close-btn" (click)="closeAlertDrawer()">✕</button>
+    </header>
+    <div class="drawer-body">
+      <p><strong>Mức độ:</strong> {{ selectedAlert.severity }}</p>
+      <p><strong>Module:</strong> {{ selectedAlert.module }}</p>
+      <p><strong>Lần xuất hiện:</strong> {{ selectedAlert.occurrences }}</p>
+      <p><strong>Gần nhất:</strong> {{ selectedAlert.lastSeen }}</p>
+      <p><strong>Mô tả:</strong> Chi tiết lỗi, pattern, log... (mock)</p>
+    </div>
+    <footer class="drawer-footer">
+      <button class="btn btn-primary btn-sm" type="button">Mở Test Run gần nhất</button>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="closeAlertDrawer()">Đóng</button>
+    </footer>
+  </div>
+</div>

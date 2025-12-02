@@ -1,0 +1,26 @@
+:host {
+  display: block;
+}
+
+.report-wrapper {
+  width: 100%;
+  min-height: calc(100vh - 220px);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #0b0d17;
+}
+
+.report-iframe {
+  width: 100%;
+  height: calc(100vh - 220px);
+  border: none;
+  background: #000;
+}
+
+@media (max-width: 768px) {
+  .report-wrapper,
+  .report-iframe {
+    min-height: 70vh;
+    height: 70vh;
+  }
+}

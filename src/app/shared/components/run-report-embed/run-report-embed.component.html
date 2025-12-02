@@ -1,0 +1,39 @@
+<div class="report-panel">
+  <ng-container *ngIf="reportUrl && reportType; else noReport">
+    <div class="report-header">
+      <div class="title">
+        <span *ngIf="reportType === 'allure'">Allure Report</span>
+        <span *ngIf="reportType === 'mochawesome'">Mochawesome Report</span>
+      </div>
+      <span class="hint">
+        Report được nhúng qua iframe từ {{ reportType }}.
+        Nếu không hiển thị, kiểm tra lại reportUrl hoặc cấu hình X-Frame-Options / CSP.
+      </span>
+    </div>
+
+    <div class="report-skeleton" *ngIf="!isLoaded">
+      <!-- TODO: thay bằng skeleton từ #progress nếu có -->
+      Đang tải report HTML...
+    </div>
+
+    <div class="report-iframe-wrapper" [class.report-iframe-wrapper--loaded]="isLoaded">
+      <iframe
+        *ngIf="safeUrl"
+        class="report-iframe"
+        [src]="safeUrl"
+        (load)="onIframeLoad()"
+        frameborder="0"
+        title="Test HTML Report"
+      ></iframe>
+    </div>
+  </ng-container>
+
+  <ng-template #noReport>
+    <div class="empty-state">
+      <div class="empty-title">Chưa có report HTML</div>
+      <div class="empty-sub">
+        Run này chưa được cấu hình Allure/Mochawesome hoặc chưa có reportUrl.
+      </div>
+    </div>
+  </ng-template>
+</div>

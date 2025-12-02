@@ -1,0 +1,39 @@
+<div class="space-y-5 lg:space-y-6">
+  <nav class="flex items-center gap-2 text-xs text-text-dim">
+    <a class="hover:text-text" href="#">Test Reports</a>
+    <span>/</span>
+    <span class="text-text">HTML Report</span>
+  </nav>
+
+  <header class="rounded-2xl border border-border-soft bg-bg-elev/70 p-5 shadow-soft/40">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div class="space-y-1">
+        <h1 class="text-2xl font-semibold text-text">Báo cáo test (HTML report)</h1>
+        <p class="text-sm text-text-dim">
+          Nội dung được load từ file HTML trong /assets/report và hiển thị qua iframe để cách biệt style hệ thống.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="focus-ring inline-flex items-center justify-center gap-2 rounded-xl border border-border-subtle bg-white/5 px-4 py-2 text-sm font-semibold text-text transition hover:bg-white/10"
+        (click)="reloadReport()"
+      >
+        <lucide-icon name="refresh-cw" class="h-4 w-4"></lucide-icon>
+        <span>Reload</span>
+      </button>
+    </div>
+  </header>
+
+  <section class="rounded-2xl border border-border-soft bg-bg-elev/80 shadow-soft/40">
+    <div class="report-wrapper">
+      <iframe
+        *ngIf="reportUrl"
+        class="report-iframe"
+        [src]="reportUrl"
+        loading="lazy"
+        sandbox="allow-same-origin allow-scripts allow-modals allow-popups allow-forms"
+        title="HTML Report"
+      ></iframe>
+    </div>
+  </section>
+</div>

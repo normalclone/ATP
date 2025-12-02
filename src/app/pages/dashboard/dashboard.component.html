@@ -1,0 +1,243 @@
+<div class="dashboard-page">
+  <!-- HEADER -->
+  <header class="dashboard-header">
+    <div class="header-left">
+      <h1 class="page-title">Dashboard – Automation</h1>
+      <p class="page-subtitle">Tổng quan chất lượng & hoạt động của automation trong 7–30 ngày gần nhất.</p>
+    </div>
+    <div class="header-right">
+      <div class="project-select">
+        <label>Project</label>
+        <select [(ngModel)]="selectedProject" (ngModelChange)="onProjectChange($event)">
+          <option value="DVCLT">DVCLT</option>
+          <option value="CSKCB_V2">CSKCB_V2</option>
+          <option value="CTDL">CTDL</option>
+          <option value="TWD">TWD</option>
+        </select>
+      </div>
+      <span class="env-badge">ENV: {{ env }}</span>
+      <button class="btn btn-primary btn-sm" type="button" (click)="onViewFullReport()">
+        Xem report
+      </button>
+    </div>
+  </header>
+
+  <!-- SUMMARY KPIs -->
+  <section class="summary-grid">
+    <article class="summary-card" *ngFor="let kpi of kpis" [ngClass]="'tone-' + (kpi.tone || 'primary')">
+      <div class="summary-label">{{ kpi.label }}</div>
+      <div class="summary-value">{{ kpi.value }}</div>
+      <div class="summary-sub" *ngIf="kpi.subLabel">{{ kpi.subLabel }}</div>
+    </article>
+    <article class="summary-card extra" [ngClass]="'tone-' + (extraKpi.tone || 'primary')">
+      <div class="summary-label">{{ extraKpi.label }}</div>
+      <div class="summary-value">{{ extraKpi.value }}</div>
+      <div class="summary-sub" *ngIf="extraKpi.subLabel">{{ extraKpi.subLabel }}</div>
+    </article>
+  </section>
+
+  <!-- ROW 2: CHART + ACTIVITY -->
+  <section class="row-two">
+    <article class="panel panel-chart">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Xu hướng Pass / Fail (7 ngày)</div>
+          <div class="panel-sub">Số run pass/fail theo ngày.</div>
+        </div>
+      </div>
+      <div
+        class="chart-placeholder"
+        (mouseleave)="hideTrendHover()"
+        (mousemove)="hoveredPoint && updateHoverPos($event)"
+      >
+        <div class="chart-legend">
+          <span class="legend-item legend-pass">Pass</span>
+          <span class="legend-item legend-fail">Fail</span>
+        </div>
+        <div class="chart-grid">
+          <div
+            class="chart-row"
+            *ngFor="let point of trend"
+            [attr.aria-label]="'Ngày ' + point.date + ': Pass ' + point.pass + ', Fail ' + point.fail"
+            (mouseenter)="showTrendHover(point, $event)"
+            (mousemove)="showTrendHover(point, $event)"
+          >
+            <div class="chart-date">{{ point.date }}</div>
+            <div class="chart-bars">
+              <div class="bar bar-pass" [style.width.%]="point.pass * 8"></div>
+              <div class="bar bar-fail" [style.width.%]="point.fail * 8"></div>
+            </div>
+            <div class="chart-values">Pass {{ point.pass }} / Fail {{ point.fail }}</div>
+          </div>
+        </div>
+        <div
+          *ngIf="hoveredPoint"
+          class="chart-hover-floating"
+          [style.left.px]="hoverPos.x"
+          [style.top.px]="hoverPos.y"
+        >
+          <div><strong>{{ hoveredPoint.date }}</strong></div>
+          <div>Pass: {{ hoveredPoint.pass }}</div>
+          <div>Fail: {{ hoveredPoint.fail }}</div>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel panel-activity">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">Hoạt động gần đây</div>
+          <div class="panel-sub">Các run mới nhất.</div>
+        </div>
+      </div>
+      <ul class="activity-list">
+        <li class="activity-item" *ngFor="let act of activities">
+          <div class="activity-main">
+            <span class="activity-id">{{ act.id }}</span>
+            <span class="activity-status" [ngClass]="'status-' + act.status">{{ act.status | uppercase }}</span>
+          </div>
+          <div class="activity-meta">
+            <span>{{ act.branch }} • {{ act.env }}</span>
+            <span>{{ act.trigger }}</span>
+            <span>{{ act.time }}</span>
+          </div>
+          <div class="activity-actions">
+            <button
+              type="button"
+              class="btn-icon btn-ghost btn-xs"
+              (click)="onViewRunReport(act)"
+              title="Xem report"
+            >
+              👁
+            </button>
+          </div>
+        </li>
+      </ul>
+    </article>
+  </section>
+
+  <!-- ROW 3: HOT MODULES + HIGHLIGHTS + JOBS -->
+  <section class="row-three">
+    <article class="panel panel-hot-modules">
+      <div class="panel-header">
+        <div class="panel-title">Hot modules</div>
+        <div class="panel-sub">Module có fail rate cao hoặc flaky nhiều.</div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Module</th>
+              <th style="width:90px;">Testcase</th>
+              <th style="width:90px;">Run 7 ngày</th>
+              <th style="width:90px;">Fail rate</th>
+              <th style="width:80px;">Flaky</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of hotModules">
+              <td>{{ row.module }}</td>
+              <td class="text-muted">{{ row.testcases }}</td>
+              <td class="text-muted">{{ row.runs7d }}</td>
+              <td [ngClass]="getFailRateClass(row.failRate)">{{ row.failRate }}%</td>
+              <td class="text-muted">{{ row.flaky }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="panel panel-highlights">
+      <div class="panel-header">
+        <div class="panel-title">Flaky / Failed nổi bật</div>
+        <div class="panel-sub">Một số testcase cần ưu tiên xem lại.</div>
+      </div>
+      <ul class="highlight-list">
+        <li class="highlight-item" *ngFor="let h of highlights">
+          <div class="highlight-top">
+            <span class="highlight-id">{{ h.id }}</span>
+            <span
+              class="highlight-type"
+              [ngClass]="{
+                'type-flaky': h.type === 'flaky',
+                'type-failed': h.type === 'failed'
+              }"
+            >
+              {{ h.type === 'flaky' ? 'Flaky' : 'Failed' }}
+            </span>
+          </div>
+          <div class="highlight-title">{{ h.title }}</div>
+          <div class="highlight-meta">{{ h.module }} • {{ h.note }}</div>
+        </li>
+      </ul>
+
+      <div class="jobs-panel">
+        <div class="jobs-header">
+          <div class="panel-title jobs-title">Jobs & Alerts</div>
+        </div>
+        <ul class="jobs-list">
+          <li class="jobs-item" *ngFor="let job of jobs">
+            <div class="jobs-main">
+              <span class="jobs-name">{{ job.name }}</span>
+              <span
+                class="jobs-status"
+                [ngClass]="{
+                  'jobs-pass': job.status === 'pass',
+                  'jobs-fail': job.status === 'fail',
+                  'jobs-missed': job.status === 'missed'
+                }"
+              >
+                {{ job.status | uppercase }}
+              </span>
+            </div>
+            <div class="jobs-meta">{{ job.lastRun }}</div>
+          </li>
+        </ul>
+      </div>
+    </article>
+  </section>
+</div>
+
+<div *ngIf="showRunDetailModal && selectedRun" class="modal-overlay">
+  <div class="modal-card">
+    <header class="modal-header">
+      <div>
+        <p class="text-lg font-semibold text-text">Run {{ selectedRun.id }} – {{ selectedRun.branch }} ({{ selectedRun.env }})</p>
+        <p class="text-xs text-text-dim">Trigger: {{ selectedRun.trigger }} • Time: {{ selectedRun.time }}</p>
+      </div>
+      <button type="button" class="close-btn" (click)="closeRunDetail()">✕</button>
+    </header>
+    <div class="modal-body">
+      <div class="tab-row">
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="activeRunTab === 'html'"
+          (click)="activeRunTab = 'html'"
+        >
+          HTML Report
+        </button>
+      </div>
+      <div class="report-wrapper">
+        <iframe
+          *ngIf="safeReportUrl"
+          [src]="safeReportUrl"
+          class="report-frame"
+          sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+          loading="lazy"
+        ></iframe>
+        <div *ngIf="!safeReportUrl" class="empty-report">Run chưa có report hoặc report không tồn tại.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div *ngIf="toast" class="toast" [ngClass]="toast.type">
+  <div class="toast-content">
+    <span *ngIf="toast.type === 'success'">✅</span>
+    <span *ngIf="toast.type === 'warn'">⚠️</span>
+    <span *ngIf="toast.type === 'danger'">⛔</span>
+    <span>{{ toast.message }}</span>
+  </div>
+  <button class="toast-close" (click)="dismissToast()">✕</button>
+</div>

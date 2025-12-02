@@ -59,6 +59,11 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'report-viewer',
+        loadComponent: () =>
+          import('./pages/report-viewer/report-viewer.component').then((m) => m.ReportViewerComponent),
+      },
+      {
         path: 'suites',
         loadComponent: () =>
           import('./pages/test-suites/test-suites.component').then((m) => m.TestSuitesComponent),

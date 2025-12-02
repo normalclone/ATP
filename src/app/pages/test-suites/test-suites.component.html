@@ -58,18 +58,18 @@
                 <p class="text-sm font-semibold text-text">{{ suite.name }}</p>
                 <p class="text-xs text-text-dim">{{ suite.project }} • {{ suite.specs }} spec</p>
               </div>
-              <span
-                *ngIf="suite.tag"
-                class="rounded-full px-2 py-0.5 text-[11px] font-medium"
-                [ngClass]="{
-                  'bg-primary-soft border border-primary-border text-text-badge-primary': suite.tag?.tone === 'primary',
-                  'bg-success-soft border border-success-border text-text-badge-success': suite.tag?.tone === 'success',
-                  'bg-warn-soft border border-warn-border text-text-badge-warn': suite.tag?.tone === 'warn',
-                  'bg-danger-soft border border-danger-border text-text-badge-danger': suite.tag?.tone === 'danger'
-                }"
-              >
-                {{ suite.tag?.label }}
-              </span>
+                <span
+                  *ngIf="suite.tag"
+                  class="rounded-full px-2 py-0.5 text-[11px] font-medium"
+                  [ngClass]="{
+                    'bg-primary-soft border border-primary-border text-text-badge-primary': suite.tag.tone === 'primary',
+                    'bg-success-soft border border-success-border text-text-badge-success': suite.tag.tone === 'success',
+                    'bg-warn-soft border border-warn-border text-text-badge-warn': suite.tag.tone === 'warn',
+                    'bg-danger-soft border border-danger-border text-text-badge-danger': suite.tag.tone === 'danger'
+                  }"
+                >
+                  {{ suite.tag.label }}
+                </span>
             </div>
             <p class="mt-1 text-xs text-text-dim line-clamp-2">{{ suite.description || '—' }}</p>
             <div class="mt-3 flex gap-2 text-xs">

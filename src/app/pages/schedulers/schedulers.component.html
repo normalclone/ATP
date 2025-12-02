@@ -1,0 +1,218 @@
+<div class="space-y-5 lg:space-y-6">
+  <nav class="flex items-center gap-2 text-xs text-text-dim">
+    <a class="hover:text-text" href="#">Test Management</a>
+    <span class="text-text-dim">/</span>
+    <span class="text-text">Đặt lịch chạy test</span>
+  </nav>
+
+  <section class="rounded-2xl border border-border-soft bg-bg-elev/70 p-5 shadow-soft/40">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div class="space-y-1">
+        <h1 class="text-2xl font-semibold text-text">Đặt lịch chạy test</h1>
+        <p class="text-sm text-text-dim">
+          Quản lý tất cả các lịch chạy testcase theo suite, môi trường và kiểu lặp.
+        </p>
+      </div>
+
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+        <div
+          class="flex h-10 min-w-[260px] items-center rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text">
+          <lucide-icon name="search" class="mr-2 h-4 w-4 text-text-dim"></lucide-icon>
+          <input [(ngModel)]="searchText" (input)="onSearchChange()" type="search"
+            class="w-full bg-transparent text-sm text-text placeholder:text-text-faint focus:outline-none"
+            placeholder="Tìm lịch theo tên, suite, project, owner..." />
+        </div>
+
+        <button type="button"
+          class="focus-ring inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-text shadow-soft transition hover:bg-primary-hover"
+          (click)="openCreateSchedule()">
+          <lucide-icon name="plus" class="h-4 w-4"></lucide-icon>
+          <span>Tạo lịch mới</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-border-soft bg-bg-elev/70 p-4 lg:p-5 shadow-soft/30 space-y-4">
+    <div class="flex flex-wrap gap-2">
+      <button *ngFor="let tab of statusTabs" type="button" class="status-tab" [class.active]="statusTab === tab.id"
+        (click)="changeStatusTab(tab.id)">
+        {{ tab.label }}
+      </button>
+    </div>
+
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <label class="flex flex-col gap-1 text-xs text-text-dim">
+        <span>Project</span>
+        <select
+          class="h-10 rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+          [(ngModel)]="projectFilter" (change)="onFiltersChange()">
+          <option *ngFor="let opt of projectOptions" [ngValue]="opt">{{ opt }}</option>
+        </select>
+      </label>
+
+      <label class="flex flex-col gap-1 text-xs text-text-dim">
+        <span>Environment</span>
+        <select
+          class="h-10 rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+          [(ngModel)]="envFilter" (change)="onFiltersChange()">
+          <option *ngFor="let opt of envOptions" [ngValue]="opt">{{ opt }}</option>
+        </select>
+      </label>
+
+      <label class="flex flex-col gap-1 text-xs text-text-dim">
+        <span>Suite</span>
+        <select
+          class="h-10 rounded-xl border border-border-subtle bg-white/5 px-3 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+          [(ngModel)]="suiteFilter" (change)="onFiltersChange()">
+          <option *ngFor="let opt of suiteOptions" [ngValue]="opt">{{ opt }}</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="overflow-hidden rounded-2xl border border-border-soft bg-bg-elev/80 shadow-soft/40">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-xs uppercase tracking-wide text-text-dim">
+          <tr class="border-b border-border-soft text-left">
+            <th class="px-4 py-3 min-w-[220px]">Tên lịch</th>
+            <th class="px-4 py-3 min-w-[150px]">Suite</th>
+            <th class="px-4 py-3 w-[110px]">Kiểu</th>
+            <th class="px-4 py-3 min-w-[160px]">Lịch</th>
+            <th class="px-4 py-3 w-[140px]">Next run</th>
+            <th class="px-4 py-3 w-[140px]">Last run</th>
+            <th class="px-4 py-3 w-[120px]">Trạng thái</th>
+            <th class="px-4 py-3 w-[160px]" aria-label="Actions"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border-soft">
+          <tr *ngFor="let row of pagedSchedules" class="transition hover:bg-white/5">
+            <td class="px-4 py-3 align-top">
+              <div class="font-semibold text-text">{{ row.name }}</div>
+              <div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-text-dim">
+                <span>Project: {{ row.projectName }}</span>
+                <span>Env: {{ row.environment }}</span>
+                <span>Owner: {{ row.ownerName }}</span>
+              </div>
+            </td>
+            <td class="px-4 py-3 align-top whitespace-nowrap text-text">{{ row.suite }}</td>
+            <td class="px-4 py-3 align-top whitespace-nowrap">
+              <span [ngClass]="typeBadgeClass(row.type)">{{ typeLabel(row.type) }}</span>
+            </td>
+            <td class="px-4 py-3 align-top whitespace-nowrap text-text">{{ row.scheduleSummary }}</td>
+            <td class="px-4 py-3 align-top whitespace-nowrap text-text">{{ row.nextRun }}</td>
+            <td class="px-4 py-3 align-top whitespace-nowrap text-text">{{ row.lastRun }}</td>
+            <td class="px-4 py-3 align-top whitespace-nowrap">
+              <span [ngClass]="statusBadgeClass(row.status)">{{ statusLabel(row.status) }}</span>
+            </td>
+            <td class="px-4 py-3 align-top">
+              <div class="action-icons">
+                <button type="button" class="primary" (click)="runNow(row)" title="Chạy ngay lịch này">
+                  <lucide-icon name="play" class="h-4 w-4"></lucide-icon>
+                </button>
+                <button type="button" class="ghost"
+                  [ngClass]="row.status === 'paused' ? 'success' : row.status === 'active' ? 'warn' : ''"
+                  (click)="togglePause(row)" [title]="row.status === 'paused' ? 'Kích hoạt lại lịch' : 'Tạm dừng lịch'">
+                  <lucide-icon [name]="row.status === 'paused' ? 'play' : 'pause'" class="h-4 w-4"></lucide-icon>
+                </button>
+                <button type="button" class="ghost" (click)="editSchedule(row)" title="Chỉnh sửa lịch">
+                  <lucide-icon name="edit-3" class="h-4 w-4"></lucide-icon>
+                </button>
+                <button type="button" class="danger" (click)="openDeleteConfirm(row)" title="Xoá lịch này">
+                  <lucide-icon name="trash-2" class="h-4 w-4"></lucide-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+
+
+        </tbody>
+      </table>
+    </div>
+
+    <div
+      class="flex flex-wrap items-center justify-between gap-3 border-t border-border-soft bg-bg px-4 py-3 text-xs text-text-dim">
+      <span>Tổng số lịch: {{ totalItems }}</span>
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="flex items-center gap-2">
+          <span>Page size</span>
+          <select
+            class="h-8 rounded-lg border border-border-subtle bg-white/5 px-2 text-xs text-text focus:outline-none focus:ring-2 focus:ring-primary/40"
+            [ngModel]="pageSize" (ngModelChange)="onPageSizeChange($event)">
+            <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }}</option>
+          </select>
+        </label>
+
+        <div class="flex items-center gap-1">
+          <button type="button"
+            class="h-8 w-8 rounded-lg border border-border-subtle bg-white/5 text-text-dim transition hover:bg-white/10"
+            [disabled]="currentPage === 1" (click)="onPageChange(currentPage - 1)" aria-label="Previous page">
+            ‹
+          </button>
+          <button *ngFor="let page of pageNumbers" type="button"
+            class="h-8 min-w-[32px] rounded-lg border border-border-subtle bg-white/5 px-2 text-text-dim transition hover:bg-white/10"
+            [class.bg-white/15]="page === currentPage" [class.text-text]="page === currentPage"
+            (click)="onPageChange(page)">
+            {{ page }}
+          </button>
+          <button type="button"
+            class="h-8 w-8 rounded-lg border border-border-subtle bg-white/5 text-text-dim transition hover:bg-white/10"
+            [disabled]="currentPage === totalPages" (click)="onPageChange(currentPage + 1)" aria-label="Next page">
+            ›
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div *ngIf="deleteModalOpen" class="confirm-overlay">
+  <div class="confirm-card">
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-sm font-semibold text-text">Xoá lịch chạy test</p>
+        <p class="mt-1 text-xs text-text-dim">
+          Bạn có chắc chắn muốn xoá lịch "{{ scheduleToDelete?.name }}"? Hành động này không thể hoàn tác.
+        </p>
+      </div>
+      <button type="button" class="rounded-full border border-border-subtle p-1 text-text-dim"
+        (click)="closeDeleteConfirm()">
+        <lucide-icon name="x" class="h-4 w-4"></lucide-icon>
+      </button>
+    </div>
+    <ul class="mt-3 space-y-1 text-xs text-text-dim">
+      <li>• Lịch chạy sẽ không còn tự động chạy nữa.</li>
+      <li>• Các lần chạy trước đây vẫn được giữ trong log nếu hệ thống có.</li>
+    </ul>
+    <div class="mt-4 flex items-center justify-end gap-2">
+      <button type="button"
+        class="rounded-lg border border-border-subtle px-3 py-2 text-sm text-text transition hover:bg-white/5"
+        (click)="closeDeleteConfirm()">
+        Huỷ
+      </button>
+      <button type="button"
+        class="inline-flex items-center gap-2 rounded-lg bg-danger px-4 py-2 text-sm font-semibold text-text transition hover:bg-danger-hover disabled:opacity-70"
+        [disabled]="deleteLoading" (click)="confirmDelete()">
+        <span *ngIf="deleteLoading"
+          class="h-3 w-3 animate-spin rounded-full border-2 border-white/70 border-t-transparent"></span>
+        Xoá lịch
+      </button>
+    </div>
+  </div>
+</div>
+
+<app-run-schedule-modal [open]="scheduleModalOpen" (close)="closeScheduleModal()"
+  (submit)="handleScheduleSubmit()"></app-run-schedule-modal>
+
+<div *ngIf="toast" class="toast" [ngClass]="toast.type">
+  <div class="flex items-center gap-2">
+    <lucide-icon [name]="toast.type === 'success' ? 'check-circle-2' : 'alert-triangle'" class="h-4 w-4"></lucide-icon>
+    <div class="text-sm font-medium leading-snug">{{ toast.message }}</div>
+  </div>
+  <button type="button" class="close" (click)="dismissToast()">
+    <lucide-icon name="x" class="h-4 w-4"></lucide-icon>
+  </button>
+  <div class="sr-only" role="status"
+    [attr.aria-label]="toast.type === 'success' ? 'Thông báo thành công' : 'Thông báo lỗi'"></div>
+</div>
