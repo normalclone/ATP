@@ -59,20 +59,6 @@
       </label>
 
       <label class="filter-item">
-        <span class="text-xs text-text-dim">Branch</span>
-        <select class="select" [(ngModel)]="branch">
-          <option *ngFor="let opt of branchOptions" [ngValue]="opt">{{ opt }}</option>
-        </select>
-      </label>
-
-      <label class="filter-item">
-        <span class="text-xs text-text-dim">Environment</span>
-        <select class="select" [(ngModel)]="environment">
-          <option *ngFor="let opt of environmentOptions" [ngValue]="opt">{{ opt }}</option>
-        </select>
-      </label>
-
-      <label class="filter-item">
         <span class="text-xs text-text-dim">Trigger</span>
         <select class="select" [(ngModel)]="trigger">
           <option *ngFor="let opt of triggerOptions" [ngValue]="opt">{{ opt }}</option>

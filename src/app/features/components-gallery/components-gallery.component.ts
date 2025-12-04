@@ -668,7 +668,7 @@ export class ComponentsGalleryComponent {
     { id: 'alerts', title: 'Alerts · Toasts', description: 'Success / Info / Warn / Danger.' },
     { id: 'tabs', title: 'Tabs', description: 'Underline + pill.' },
     { id: 'modal', title: 'Modal · Drawer', description: 'Nền bg-elev, overlay blur.' },
-    { id: 'tooltip', title: 'Tooltip · Dropdown', description: 'Tương phản cao, bo nhỏ.' },
+    { id: 'tooltip', title: 'Tooltip · Dropdown', description: 'Tương phản High, bo nhỏ.' },
     { id: 'progress', title: 'Progress · Skeleton · Empty', description: 'State chuẩn cho loading.' },
     { id: 'navigation', title: 'Breadcrumb · Pagination', description: 'Điều hướng phụ.' },
     { id: 'cards', title: 'Card · Layout helpers', description: 'Title + toolbar + grid.' },

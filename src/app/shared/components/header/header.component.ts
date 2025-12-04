@@ -11,7 +11,7 @@ import { AuthService } from '../../services/auth.service';
   imports: [CommonModule, FormsModule, LucideAngularModule, RouterModule],
   styles: [
     `
-      #env-select option {
+      select option {
         background: var(--bg, #2b2d31);
         color: var(--text, #e3e5e8);
       }
@@ -160,37 +160,6 @@ import { AuthService } from '../../services/auth.service';
               <span class="sm:hidden">Chạy</span>
             </button>
 
-            <div class="relative">
-              <button
-                type="button"
-                class="focus-ring inline-flex items-center gap-2 rounded-lg border border-border-subtle bg-white/5 px-3 py-2 text-sm font-semibold text-text"
-                (click)="toggleUserMenu()"
-                aria-haspopup="menu"
-              >
-                <span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-text">QA</span>
-                <span class="hidden sm:inline">QA User</span>
-                <lucide-icon name="chevron-down" class="h-3 w-3 text-text-dim"></lucide-icon>
-              </button>
-
-              <div
-                *ngIf="userMenuOpen"
-                class="absolute right-0 mt-2 w-52 overflow-hidden rounded-lg border border-border-subtle bg-bg-elev shadow-soft"
-              >
-                <a class="menu-item" routerLink="/profile">
-                  <lucide-icon name="user" class="h-4 w-4"></lucide-icon>
-                  <span>Thông tin tài khoản</span>
-                </a>
-                <a class="menu-item" routerLink="/change-password">
-                  <lucide-icon name="key" class="h-4 w-4"></lucide-icon>
-                  <span>Đổi mật khẩu</span>
-                </a>
-                <div class="menu-divider"></div>
-                <button type="button" class="menu-item danger" (click)="openLogoutConfirm()">
-                  <lucide-icon name="log-out" class="h-4 w-4"></lucide-icon>
-                  <span>Đăng xuất</span>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -220,33 +189,6 @@ import { AuthService } from '../../services/auth.service';
       </div>
     </header>
 
-    <div *ngIf="logoutConfirmOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" (click)="cancelLogout()">
-      <div class="logout-modal" (click)="$event.stopPropagation()">
-        <h3 class="text-lg font-semibold text-text">Đăng xuất</h3>
-        <p class="mt-2 text-sm text-text-dim">Bạn có chắc chắn muốn đăng xuất khỏi AutoTest Portal?</p>
-        <div class="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            class="focus-ring rounded-lg border border-border-subtle bg-white/5 px-3 py-2 text-sm text-text"
-            (click)="cancelLogout()"
-          >
-            Hủy
-          </button>
-          <button
-            type="button"
-            class="focus-ring rounded-lg px-3 py-2 text-sm font-semibold text-white"
-            style="background:#d83c3e;"
-            (click)="confirmLogout()"
-          >
-            Đăng xuất
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div *ngIf="toastMessage" class="toast-inline">
-      {{ toastMessage }}
-    </div>
   `,
 })
 export class HeaderComponent {
@@ -264,11 +206,6 @@ export class HeaderComponent {
   searchQuery = '';
   mobileSearchOpen = false;
   envOptions = ['prod', 'dev', 'beta', 'khac'];
-  userMenuOpen = false;
-  logoutConfirmOpen = false;
-  toastMessage = '';
-  toastTimer?: number;
-
   constructor(private auth: AuthService, private router: Router) {}
 
   handleProjectClick() {
@@ -292,30 +229,4 @@ export class HeaderComponent {
     this.envChange.emit(value);
   }
 
-  toggleUserMenu() {
-    this.userMenuOpen = !this.userMenuOpen;
-  }
-
-  openLogoutConfirm() {
-    this.userMenuOpen = false;
-    this.logoutConfirmOpen = true;
-  }
-
-  cancelLogout() {
-    this.logoutConfirmOpen = false;
-  }
-
-  confirmLogout() {
-    this.auth.logout();
-    this.logoutConfirmOpen = false;
-    this.showToast('Dang xuat thanh cong!');
-  }
-
-  private showToast(message: string) {
-    this.toastMessage = message;
-    if (this.toastTimer) clearTimeout(this.toastTimer);
-    this.toastTimer = window.setTimeout(() => {
-      this.toastMessage = '';
-    }, 3000);
-  }
 }

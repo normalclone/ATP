@@ -364,6 +364,232 @@
   </div>
 </div>
 
+<!-- Import testcase modal -->
+<div
+  *ngIf="showImportModal"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+  (click)="closeImport()"
+>
+  <div
+    class="w-full max-w-5xl rounded-2xl border border-border-subtle bg-bg-elev p-6 shadow-soft/60"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-xl font-semibold text-text">Import Testcase</p>
+        <p class="text-sm text-text-dim">
+          Chọn file testcase theo mẫu để import. Nếu còn testcase lỗi, hệ thống sẽ không cho phép import.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="h-9 w-9 rounded-full border border-border-subtle bg-white/5 text-text transition hover:bg-white/10"
+        (click)="closeImport()"
+        aria-label="Dong modal import"
+      >
+        ×
+      </button>
+    </div>
+
+    <div class="mt-4 space-y-4">
+      <div class="rounded-xl border border-border-subtle bg-white/5 p-4 text-sm text-text leading-relaxed">
+        <p class="font-semibold text-text">Hướng dẫn</p>
+        <ul class="mt-2 list-disc space-y-1 pl-4 text-text-dim">
+          <li>Chọn file Excel/CSV đúng template (TC ID, Title, Priority, Steps, Expected...)</li>
+          <li>Hệ thống sẽ hiển thị preview testcase hợp lệ và testcase lỗi (kèm lý do).</li>
+          <li>Nếu còn testcase lỗi, bạn cần sửa file và import lại.</li>
+        </ul>
+      </div>
+
+      <div class="grid gap-3 md:grid-cols-2">
+        <label class="space-y-2 text-sm text-text-dim">
+          <span class="text-text">Nội dung / ghi chú import</span>
+          <textarea
+            [(ngModel)]="importDescription"
+            rows="2"
+            class="w-full rounded-xl border border-border-subtle bg-white/5 px-3 py-2 text-text placeholder:text-text-faint focus:border-primary focus:outline-none"
+            placeholder="VD: Import testcase Sprint 12 – module Payment"
+            maxlength="500"
+          ></textarea>
+        </label>
+
+        <div class="space-y-2 text-sm text-text-dim">
+          <span class="text-text">Chọn file import</span>
+          <label
+            class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed border-border-subtle bg-white/5 px-4 py-3 text-text transition hover:border-primary"
+          >
+            <div>
+              <p class="text-sm font-medium">
+                {{ fileSelected ? selectedFileName : 'Kéo thả hoặc chọn file (.xlsx, .csv)' }}
+              </p>
+              <p class="text-xs text-text-dim">Tối đa 5MB. Hỗ trợ .xlsx, .csv.</p>
+            </div>
+            <span class="rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">Chọn file</span>
+            <input type="file" class="sr-only" accept=".xlsx,.csv" (change)="onFileSelected($event)" />
+          </label>
+
+          <div *ngIf="uploadInProgress" class="space-y-1">
+            <div class="flex justify-between text-xs text-text-dim">
+              <span>Đang tải file lên...</span>
+              <span>{{ uploadPercent }}%</span>
+            </div>
+            <div class="h-2 w-full overflow-hidden rounded-full bg-black/30">
+              <div
+                class="h-2 rounded-full bg-primary transition-all duration-200"
+                [style.width.%]="uploadPercent"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid gap-3 md:grid-cols-2">
+        <label class="space-y-2 text-sm text-text-dim">
+          <span class="text-text">Project (theo navbar)</span>
+          <input
+            class="h-10 w-full rounded-xl border border-border-subtle bg-white/10 px-3 text-text"
+            [value]="importProject || 'Automation Project'"
+            disabled
+            aria-label="Project đã chọn"
+          />
+        </label>
+
+        <div class="space-y-2 text-sm text-text-dim">
+          <span class="text-text">Chế độ import</span>
+          <div class="flex flex-wrap gap-2">
+            <label
+              class="inline-flex items-center gap-2 rounded-xl border border-border-subtle bg-white/5 px-3 py-2 text-text"
+            >
+              <input type="radio" name="import-mode" value="override" [(ngModel)]="importMode" />
+              <span>Ghi đè testcase trùng</span>
+            </label>
+            <label
+              class="inline-flex items-center gap-2 rounded-xl border border-border-subtle bg-white/5 px-3 py-2 text-text"
+            >
+              <input type="radio" name="import-mode" value="append" [(ngModel)]="importMode" />
+              <span>Chỉ thêm mới</span>
+            </label>
+            <label
+              class="inline-flex items-center gap-2 rounded-xl border border-border-subtle bg-white/5 px-3 py-2 text-text"
+            >
+              <input type="radio" name="import-mode" value="skip-errors" [(ngModel)]="importMode" />
+              <span>Bỏ qua dòng lỗi</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid gap-3 lg:grid-cols-2">
+        <div class="rounded-xl border border-border-subtle bg-white/5 p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-semibold text-text">Preview testcase hợp lệ</p>
+              <p class="text-xs text-text-dim">Tối đa 10 dòng đầu.</p>
+            </div>
+            <span class="text-xs text-text-dim">{{ validRows.length }} dòng</span>
+          </div>
+          <div class="mt-3 max-h-64 overflow-auto rounded-lg border border-border-soft">
+            <table class="min-w-full text-left text-sm text-text">
+              <thead class="bg-white/5 text-xs text-text-dim">
+                <tr>
+                  <th class="px-3 py-2">TC ID</th>
+                  <th class="px-3 py-2">Title</th>
+                  <th class="px-3 py-2">Module</th>
+                  <th class="px-3 py-2">Priority</th>
+                  <th class="px-3 py-2">Steps</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of validRows" class="border-t border-border-soft">
+                  <td class="px-3 py-2 text-xs font-semibold">{{ row.tcId }}</td>
+                  <td class="px-3 py-2 text-xs">{{ row.title }}</td>
+                  <td class="px-3 py-2 text-xs text-text-dim">{{ row.module || '-' }}</td>
+                  <td class="px-3 py-2 text-xs">
+                    <span
+                      class="rounded-full px-2 py-1 text-[11px] font-semibold"
+                      [ngClass]="{
+                        'bg-danger-soft border border-danger-border text-text-badge-danger': row.priority === 'High',
+                        'bg-warn-soft border border-warn-border text-text-badge-warn': row.priority === 'Medium',
+                        'bg-primary-soft border border-primary-border text-text-badge-primary': row.priority === 'Low'
+                      }"
+                    >
+                      {{ row.priority || '-' }}
+                    </span>
+                  </td>
+                  <td class="px-3 py-2 text-xs text-text-dim">{{ row.steps }}</td>
+                </tr>
+                <tr *ngIf="validRows.length === 0">
+                  <td class="px-3 py-4 text-center text-xs text-text-dim" colspan="5">
+                    Chưa có dữ liệu preview. Chọn file để xem trước.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-border-subtle bg-white/5 p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-semibold text-text">Testcase lỗi (không thể import)</p>
+              <p class="text-xs text-text-dim">Nếu còn lỗi, nút Import sẽ bị vô hiệu hóa.</p>
+            </div>
+            <span class="text-xs text-text-dim">{{ errorRows.length }} dòng</span>
+          </div>
+          <div class="mt-3 max-h-64 overflow-auto rounded-lg border border-border-soft">
+            <table class="min-w-full text-left text-sm text-text">
+              <thead class="bg-white/5 text-xs text-text-dim">
+                <tr>
+                  <th class="px-3 py-2">TC ID</th>
+                  <th class="px-3 py-2">Title</th>
+                  <th class="px-3 py-2">Module</th>
+                  <th class="px-3 py-2">Priority</th>
+                  <th class="px-3 py-2">Steps</th>
+                  <th class="px-3 py-2">Lý do lỗi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of errorRows" class="border-t border-border-soft">
+                  <td class="px-3 py-2 text-xs font-semibold text-danger">{{ row.tcId }}</td>
+                  <td class="px-3 py-2 text-xs">{{ row.title }}</td>
+                  <td class="px-3 py-2 text-xs text-text-dim">{{ row.module || '-' }}</td>
+                  <td class="px-3 py-2 text-xs text-text-dim">{{ row.priority || '-' }}</td>
+                  <td class="px-3 py-2 text-xs text-text-dim">{{ row.steps }}</td>
+                  <td class="px-3 py-2 text-xs text-danger font-medium">{{ row.errorReason }}</td>
+                </tr>
+                <tr *ngIf="errorRows.length === 0">
+                  <td class="px-3 py-4 text-center text-xs text-text-dim" colspan="6">
+                    Không có testcase lỗi. Bạn có thể import.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-5 flex justify-end gap-3">
+      <button
+        type="button"
+        class="inline-flex h-10 items-center gap-2 rounded-xl border border-border-subtle bg-white/5 px-4 text-sm font-medium text-text transition hover:bg-white/10"
+        (click)="closeImport()"
+      >
+        Hủy
+      </button>
+      <button
+        type="button"
+        class="inline-flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-text transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-text-dim"
+        [disabled]="!canImport || importing || !importProject"
+        (click)="onImport()"
+      >
+        <span *ngIf="importing" class="h-3 w-3 animate-spin rounded-full border-2 border-white/60 border-t-transparent"></span>
+        Import
+      </button>
+    </div>
+  </div>
+</div>
+
 <div
   *ngIf="showHistoryModal"
   class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
@@ -414,3 +640,4 @@
     </div>
   </div>
 </div>
+

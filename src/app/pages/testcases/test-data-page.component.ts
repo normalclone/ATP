@@ -35,6 +35,15 @@ interface ImportHistory {
   meta: string[];
 }
 
+interface ImportRow {
+  tcId: string;
+  title: string;
+  module?: string;
+  priority?: string;
+  steps?: string;
+  errorReason?: string;
+}
+
 interface SummaryMetric {
   label: string;
   value: number;
@@ -65,9 +74,9 @@ export class TestDataPageComponent implements OnInit {
 
   summaryCards: SummaryMetric[] = [
     { label: 'Tổng số testcase', value: 1240, badge: '+32 mới', tone: 'primary' },
-    { label: 'Ưu tiên cao', value: 240, badge: '19.3%', tone: 'danger' },
-    { label: 'Ưu tiên trung bình', value: 700, badge: '56.5%', tone: 'warn' },
-    { label: 'Ưu tiên thấp', value: 300, badge: '24.2%', tone: 'success' },
+    { label: 'Ưu tiên High', value: 240, badge: '19.3%', tone: 'danger' },
+    { label: 'Ưu tiên Medium', value: 700, badge: '56.5%', tone: 'warn' },
+    { label: 'Ưu tiên Low', value: 300, badge: '24.2%', tone: 'success' },
   ];
 
   filterOptions = {
@@ -94,6 +103,17 @@ export class TestDataPageComponent implements OnInit {
   totalItems = 0;
   pageSize = 5;
   currentPage = 1;
+  showImportModal = false;
+  uploadInProgress = false;
+  uploadPercent = 0;
+  importing = false;
+  fileSelected = false;
+  selectedFileName = '';
+  importDescription = '';
+  importProject: string | null = 'Automation Project';
+  importMode: 'override' | 'append' | 'skip-errors' = 'append';
+  validRows: ImportRow[] = [];
+  errorRows: ImportRow[] = [];
   private allTestcases: Testcase[] = [
     {
       id: 'TC_LOGIN_001',
@@ -233,7 +253,7 @@ export class TestDataPageComponent implements OnInit {
     },
   ];
 
-  constructor(private route: ActivatedRoute, private router: Router) {}
+  constructor(private route: ActivatedRoute, private router: Router) { }
 
   ngOnInit() {
     this.filterTestcases(true);
@@ -288,8 +308,48 @@ export class TestDataPageComponent implements OnInit {
   }
 
   startImport() {
-    // TODO: Wire real import flow
-    console.log('Import triggered for module', this.currentModuleName);
+    this.resetImportState();
+    this.showImportModal = true;
+  }
+
+  closeImport() {
+    this.showImportModal = false;
+    this.importing = false;
+  }
+
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.fileSelected = true;
+    this.selectedFileName = file.name;
+    this.uploadInProgress = true;
+    this.uploadPercent = 0;
+    this.validRows = [];
+    this.errorRows = [];
+    const steps = [20, 45, 70, 100];
+    steps.forEach((val, idx) => {
+      setTimeout(() => {
+        this.uploadPercent = val;
+        if (val === 100) {
+          this.uploadInProgress = false;
+          this.populatePreviewData();
+        }
+      }, 200 * (idx + 1));
+    });
+  }
+
+  onImport() {
+    if (!this.canImport) return;
+    this.importing = true;
+    setTimeout(() => {
+      this.importing = false;
+      this.showImportModal = false;
+    }, 500);
+  }
+
+  get canImport(): boolean {
+    return !this.uploadInProgress && this.fileSelected && this.errorRows.length === 0 && this.validRows.length > 0;
   }
 
   openTestcaseDetail(testcase: Testcase) {
@@ -385,5 +445,63 @@ export class TestDataPageComponent implements OnInit {
     setTimeout(() => {
       this.isLoading = false;
     }, 400);
+  }
+
+  private resetImportState() {
+    this.uploadInProgress = false;
+    this.uploadPercent = 0;
+    this.importing = false;
+    this.fileSelected = false;
+    this.selectedFileName = '';
+    this.importDescription = '';
+    this.importProject = null;
+    this.importMode = 'append';
+    this.validRows = [];
+    this.errorRows = [];
+  }
+
+  private populatePreviewData() {
+    this.validRows = [
+      {
+        tcId: 'TC_LOGIN_010',
+        title: 'Reset password qua email',
+        module: 'Login',
+        priority: 'Medium',
+        steps: 'Điền email hợp lệ, nhận mail reset',
+      },
+      {
+        tcId: 'TC_PAY_021',
+        title: 'Thanh toán thẻ Visa 3DS',
+        module: 'Payment',
+        priority: 'High',
+        steps: 'Điền thẻ, qua 3DS, xác nhận thành công',
+      },
+      {
+        tcId: 'TC_CI_112',
+        title: 'Tìm kiếm công dân theo CCCD',
+        module: 'Citizen Info',
+        priority: 'Low',
+        steps: 'Nhập CCCD hợp lệ, hiển thị thông tin',
+      },
+    ];
+
+    this.errorRows = [
+      {
+        tcId: 'TC_LOGIN_099',
+        title: 'Đăng nhập bỏ trống password',
+        module: 'Login',
+        priority: 'High',
+        steps: 'Bỏ trống password',
+        errorReason: 'Thiếu cột Expected Result',
+      },
+      {
+        tcId: 'TC_PAY_099',
+        title: 'Thanh toán COD cho đơn quốc tế',
+        module: 'Payment',
+        priority: 'Medium',
+        steps: 'COD không áp dụng quốc tế',
+        errorReason: 'Giá trị Priority không hợp lệ',
+      },
+    ];
   }
 }

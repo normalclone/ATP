@@ -2,197 +2,276 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LucideAngularModule } from 'lucide-angular';
-import { RunScheduleModalComponent } from '../../shared/components/run-schedule-modal/run-schedule-modal.component';
 
-type ScheduleStatus = 'active' | 'paused' | 'ended';
-type ScheduleType = 'recurring' | 'once';
+type SchedulerStatus = 'active' | 'paused' | 'ended';
+type ScheduleType = 'recurring' | 'once' | 'cron';
 
-interface ScheduleRow {
+interface SchedulerRow {
   id: string;
   name: string;
-  suite: string;
-  type: ScheduleType;
-  scheduleSummary: string;
-  nextRun: string;
-  lastRun: string;
-  status: ScheduleStatus;
-  projectName: string;
-  environment: string;
+  projectCode: string;
+  envName: string;
   ownerName: string;
-}
-
-interface ToastState {
-  type: 'success' | 'danger';
-  message: string;
+  suiteName: string;
+  scheduleType: ScheduleType;
+  schedulePatternDisplay: string;
+  nextRunDisplay: string;
+  nextRunDate?: number;
+  nextRunSoon?: boolean;
+  lastRunTimeDisplay: string;
+  lastRunSummary: string;
+  lastRunStatus: 'passed' | 'failed' | 'running' | 'never';
+  status: SchedulerStatus;
 }
 
 @Component({
   selector: 'app-schedulers',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule, RunScheduleModalComponent],
+  imports: [CommonModule, FormsModule, LucideAngularModule],
   templateUrl: './schedulers.component.html',
   styleUrls: ['./schedulers.component.scss'],
 })
 export class SchedulersComponent {
-  searchText = '';
-  statusTab: 'status-all' | 'status-active' | 'status-paused' | 'status-ended' = 'status-all';
-  projectFilter = 'Tất cả project';
-  envFilter = 'Tất cả môi trường';
-  suiteFilter = 'Tất cả suite';
-  pageSizeOptions = [10, 20, 50];
-  pageSize = 10;
-  currentPage = 1;
-
-  scheduleModalOpen = false;
-  scheduleModalMode: 'create' | 'edit' = 'create';
-  scheduleEditing?: ScheduleRow;
-
-  deleteModalOpen = false;
-  deleteLoading = false;
-  scheduleToDelete: ScheduleRow | null = null;
-
-  toast: ToastState | null = null;
-  private toastTimer?: number;
-
   statusTabs = [
-    { id: 'status-all', label: 'Tất cả' },
-    { id: 'status-active', label: 'Đang hoạt động' },
-    { id: 'status-paused', label: 'Tạm dừng' },
-    { id: 'status-ended', label: 'Kết thúc' },
-  ] as const;
+    { id: 'all', label: 'Tất cả', value: 'all' },
+    { id: 'active', label: 'Đang hoạt động', value: 'active' },
+    { id: 'paused', label: 'Tạm dừng', value: 'paused' },
+    { id: 'ended', label: 'Kết thúc', value: 'ended' },
+  ];
 
-  projectOptions = ['Tất cả project', 'DVCLT', 'CSKCB_V2', 'CTDL', 'TWD'];
-  envOptions = ['Tất cả môi trường', 'DEV', 'UAT', 'STAGING', 'PROD'];
-  suiteOptions = ['Tất cả suite', 'Login – Full Flow', 'Payments Regression', 'API Mobile', 'Scheduler Monitor'];
+  projectList = ['Tất cả project', 'DVCLT', 'CSKCB_V2', 'CTDL', 'TWD', 'QA'];
+  envList: string[] = [];
+  suiteList = ['Tất cả suite', 'Login – Full Flow', 'Payments Regression', 'API Mobile', 'Scheduler Monitor'];
+  dateRangeOptions = [
+    { id: 'all', label: 'Tất cả thời gian' },
+    { id: 'today', label: 'Hôm nay' },
+    { id: 'next7', label: '7 ngày tới' },
+    { id: 'next30', label: '30 ngày tới' },
+  ];
 
-  schedules: ScheduleRow[] = [
+  statusFilter: 'all' | SchedulerStatus = 'all';
+  projectFilter = '';
+  projectDisplay = 'Automation Project';
+  envFilter = '';
+  envDisplay = 'DEV';
+  suiteFilter = this.suiteList[0];
+  keyword = '';
+  dateRange = 'all';
+
+  pageSizeOptions = [5, 10, 20];
+  pageSize = 10;
+  pageIndex = 1;
+
+  allRows: SchedulerRow[] = [
     {
       id: 'SCH-001',
       name: 'Login – Daily UAT',
-      suite: 'Login – Full Flow',
-      type: 'recurring',
-      scheduleSummary: 'Hàng ngày • 08:00',
-      nextRun: 'Hôm nay • 08:00',
-      lastRun: 'Hôm qua • 08:03 • Passed',
-      status: 'active',
-      projectName: 'DVCLT',
-      environment: 'UAT',
+      projectCode: 'DVCLT',
+      envName: 'UAT',
       ownerName: 'Phúc',
+      suiteName: 'Login – Full Flow',
+      scheduleType: 'recurring',
+      schedulePatternDisplay: 'Hàng ngày · 08:00',
+      nextRunDisplay: 'Hôm nay · 08:00',
+      nextRunDate: new Date('2025-02-03T08:00:00').getTime(),
+      nextRunSoon: false,
+      lastRunTimeDisplay: 'Hôm qua · 08:03',
+      lastRunSummary: 'Passed',
+      lastRunStatus: 'passed',
+      status: 'active',
     },
     {
       id: 'SCH-002',
       name: 'Payments – Weekly Regression',
-      suite: 'Payments Regression',
-      type: 'recurring',
-      scheduleSummary: 'Hàng tuần • Thứ 2-6 • 02:00',
-      nextRun: 'Ngày mai • 02:00',
-      lastRun: '03/02/2025 • 02:05 • 1 fail',
+      projectCode: 'CSKCB_V2',
+      envName: 'STG',
+      ownerName: 'Phúc',
+      suiteName: 'Payments Regression',
+      scheduleType: 'recurring',
+      schedulePatternDisplay: 'Hàng tuần · Thứ 2-6 · 02:00',
+      nextRunDisplay: 'Ngày mai · 02:00',
+      nextRunDate: new Date('2025-02-04T02:00:00').getTime(),
+      nextRunSoon: true,
+      lastRunTimeDisplay: '03/02/2025 · 02:05',
+      lastRunSummary: '1 fail',
+      lastRunStatus: 'failed',
       status: 'paused',
-      projectName: 'CSKCB_V2',
-      environment: 'STAGING',
-      ownerName: 'Minh',
     },
     {
       id: 'SCH-003',
       name: 'API Mobile – One time',
-      suite: 'API Mobile',
-      type: 'once',
-      scheduleSummary: '20/02/2025 • 09:30',
-      nextRun: '20/02/2025 • 09:30',
-      lastRun: 'Chưa chạy',
-      status: 'active',
-      projectName: 'CTDL',
-      environment: 'DEV',
+      projectCode: 'CTDL',
+      envName: 'DEV',
       ownerName: 'An',
+      suiteName: 'API Mobile',
+      scheduleType: 'once',
+      schedulePatternDisplay: '20/02/2025 · 09:30',
+      nextRunDisplay: '20/02/2025 · 09:30',
+      nextRunDate: new Date('2025-02-20T09:30:00').getTime(),
+      nextRunSoon: false,
+      lastRunTimeDisplay: 'Chưa chạy',
+      lastRunSummary: '-',
+      lastRunStatus: 'never',
+      status: 'active',
     },
     {
       id: 'SCH-004',
       name: 'Nightly Monitor',
-      suite: 'Scheduler Monitor',
-      type: 'recurring',
-      scheduleSummary: 'Hàng ngày • 02:00',
-      nextRun: 'Đêm nay • 02:00',
-      lastRun: '02/02/2025 • 02:04 • Passed',
-      status: 'ended',
-      projectName: 'TWD',
-      environment: 'PROD',
+      projectCode: 'TWD',
+      envName: 'PROD',
       ownerName: 'Tuyết',
+      suiteName: 'Scheduler Monitor',
+      scheduleType: 'cron',
+      schedulePatternDisplay: 'Hàng ngày · 02:00',
+      nextRunDisplay: 'Đêm nay · 02:00',
+      nextRunDate: new Date('2025-02-03T02:00:00').getTime(),
+      nextRunSoon: true,
+      lastRunTimeDisplay: '02/02/2025 · 02:04',
+      lastRunSummary: 'Passed',
+      lastRunStatus: 'passed',
+      status: 'ended',
+    },
+    {
+      id: 'SCH-005',
+      name: 'Smoke on Merge',
+      projectCode: 'QA',
+      envName: 'DEV',
+      ownerName: 'Toan',
+      suiteName: 'Smoke Suite',
+      scheduleType: 'cron',
+      schedulePatternDisplay: 'Theo merge CI',
+      nextRunDisplay: 'Theo pipeline',
+      nextRunDate: new Date('2025-02-05T02:00:00').getTime(),
+      nextRunSoon: false,
+      lastRunTimeDisplay: 'Hôm qua · 14:10',
+      lastRunSummary: 'Running',
+      lastRunStatus: 'running',
+      status: 'active',
     },
   ];
 
-  get filteredSchedules(): ScheduleRow[] {
-    const keyword = this.searchText.trim().toLowerCase();
-    return this.schedules.filter((row) => {
-      const matchStatus =
-        this.statusTab === 'status-all' ||
-        (this.statusTab === 'status-active' && row.status === 'active') ||
-        (this.statusTab === 'status-paused' && row.status === 'paused') ||
-        (this.statusTab === 'status-ended' && row.status === 'ended');
+  filteredRows: SchedulerRow[] = [];
+  pagedRows: SchedulerRow[] = [];
 
-      const matchProject = this.projectFilter === 'Tất cả project' || row.projectName === this.projectFilter;
-      const matchEnv = this.envFilter === 'Tất cả môi trường' || row.environment === this.envFilter;
-      const matchSuite = this.suiteFilter === 'Tất cả suite' || row.suite === this.suiteFilter;
-
-      const matchKeyword =
-        !keyword ||
-        row.name.toLowerCase().includes(keyword) ||
-        row.suite.toLowerCase().includes(keyword) ||
-        row.projectName.toLowerCase().includes(keyword) ||
-        row.ownerName.toLowerCase().includes(keyword) ||
-        row.scheduleSummary.toLowerCase().includes(keyword);
-
-      return matchStatus && matchProject && matchEnv && matchSuite && matchKeyword;
-    });
+  constructor() {
+    const storedEnv = localStorage.getItem('envValue');
+    const storedProject = localStorage.getItem('projectName');
+    this.envDisplay = (storedEnv || 'DEV').toUpperCase();
+    this.envFilter = this.envDisplay;
+    this.projectDisplay = storedProject || 'Automation Project';
+    this.projectFilter = this.projectDisplay;
+    this.applyFilters();
   }
 
-  get totalItems(): number {
-    return this.filteredSchedules.length;
+  setStatusFilter(value: 'all' | SchedulerStatus | string) {
+    const next = (value as any) === 'all' ? 'all' : (value as SchedulerStatus);
+    if (this.statusFilter === next) return;
+    this.statusFilter = next;
+    this.pageIndex = 1;
+    this.applyFilters();
   }
 
-  get totalPages(): number {
-    return Math.max(1, Math.ceil(this.totalItems / this.pageSize));
+  onFilterChange() {
+    this.pageIndex = 1;
+    this.applyFilters();
   }
 
-  get pageNumbers(): number[] {
-    return Array.from({ length: this.totalPages }, (_, idx) => idx + 1);
+  onDateRangeChange() {
+    this.pageIndex = 1;
+    this.applyFilters();
   }
 
-  get pagedSchedules(): ScheduleRow[] {
-    const start = (this.currentPage - 1) * this.pageSize;
-    return this.filteredSchedules.slice(start, start + this.pageSize);
-  }
-
-  changeStatusTab(tabId: SchedulersComponent['statusTab']) {
-    this.statusTab = tabId;
-    this.currentPage = 1;
-  }
-
-  onFiltersChange() {
-    this.currentPage = 1;
-  }
-
-  onSearchChange() {
-    this.currentPage = 1;
+  onSearch(term: string) {
+    this.keyword = term;
+    this.pageIndex = 1;
+    this.applyFilters();
   }
 
   onPageChange(page: number) {
-    if (page < 1) return;
-    const safePage = Math.min(page, this.totalPages);
-    this.currentPage = safePage;
+    if (page === this.pageIndex) return;
+    this.pageIndex = page;
+    this.updatePaged();
   }
 
-  onPageSizeChange(size: string | number) {
-    const parsed = Number(size);
-    if (Number.isNaN(parsed)) return;
-    this.pageSize = parsed;
-    this.currentPage = 1;
+  onPageSizeChange(size: number) {
+    this.pageSize = size;
+    this.pageIndex = 1;
+    this.updatePaged();
   }
 
-  typeLabel(type: ScheduleType): string {
-    return type === 'recurring' ? 'ĐKỳ' : '1 lần';
+  get totalSchedules(): number {
+    return this.filteredRows.length;
   }
 
-  statusLabel(status: ScheduleStatus): string {
+  get totalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredRows.length / this.pageSize));
+  }
+
+  actionRunNow(row: SchedulerRow) {
+    console.log('Run now', row.id);
+  }
+
+  actionToggle(row: SchedulerRow) {
+    row.status = row.status === 'active' ? 'paused' : 'active';
+  }
+
+  actionEdit(row: SchedulerRow) {
+    console.log('Edit schedule', row.id);
+  }
+
+  actionDelete(row: SchedulerRow) {
+    console.log('Delete schedule', row.id);
+  }
+
+  typeLabel(type: ScheduleType) {
+    switch (type) {
+      case 'recurring':
+        return 'ĐKỳ';
+      case 'once':
+        return '1 lần';
+      default:
+        return 'CRON';
+    }
+  }
+
+  typeClass(type: ScheduleType) {
+    switch (type) {
+      case 'recurring':
+        return 'primary';
+      case 'once':
+        return 'success';
+      default:
+        return 'neutral';
+    }
+  }
+
+  lastRunLabel(status: SchedulerRow['lastRunStatus']) {
+    switch (status) {
+      case 'passed':
+        return 'Passed';
+      case 'failed':
+        return 'Failed';
+      case 'running':
+        return 'Running';
+      default:
+        return 'Chưa chạy';
+    }
+  }
+
+  lastRunClass(status: SchedulerRow['lastRunStatus']) {
+    switch (status) {
+      case 'passed':
+        return 'badge success';
+      case 'failed':
+        return 'badge danger';
+      case 'running':
+        return 'badge primary';
+      default:
+        return 'badge neutral';
+    }
+  }
+
+  statusLabel(status: SchedulerStatus) {
     switch (status) {
       case 'active':
         return 'Active';
@@ -203,97 +282,42 @@ export class SchedulersComponent {
     }
   }
 
-  typeBadgeClass(type: ScheduleType): string {
-    return type === 'recurring' ? 'badge type-recurring' : 'badge type-once';
-  }
-
-  statusBadgeClass(status: ScheduleStatus): string {
-    if (status === 'active') return 'badge status-active';
-    if (status === 'paused') return 'badge status-paused';
-    return 'badge status-ended';
-  }
-
-  runNow(row: ScheduleRow) {
-    // TODO: connect API trigger run now
-    this.showToast('success', `Đã trigger chạy ngay cho lịch "${row.name}".`);
-  }
-
-  togglePause(row: ScheduleRow) {
-    if (row.status === 'ended') {
-      this.showToast('danger', 'Lịch đã kết thúc, không thể kích hoạt lại.');
-      return;
+  statusClass(status: SchedulerStatus) {
+    switch (status) {
+      case 'active':
+        return 'badge success';
+      case 'paused':
+        return 'badge warn';
+      default:
+        return 'badge danger';
     }
-    row.status = row.status === 'active' ? 'paused' : 'active';
-    const message =
-      row.status === 'active'
-        ? `Đã kích hoạt lại lịch "${row.name}".`
-        : `Đã tạm dừng lịch "${row.name}".`;
-    this.showToast('success', message);
   }
 
-  openCreateSchedule() {
-    this.scheduleModalMode = 'create';
-    this.scheduleEditing = undefined;
-    this.scheduleModalOpen = true;
+  private applyFilters() {
+    const keyword = this.keyword.trim().toLowerCase();
+    this.filteredRows = this.allRows.filter((row) => {
+      if (this.statusFilter !== 'all' && row.status !== this.statusFilter) return false;
+      if (this.projectFilter && row.projectCode !== this.projectFilter) return false;
+      if (this.envFilter && row.envName !== this.envFilter) return false;
+      if (this.suiteFilter !== this.suiteList[0] && row.suiteName !== this.suiteFilter) return false;
+      if (this.dateRange !== 'all' && row.nextRunDate) {
+        const now = Date.now();
+        const diffDays = (row.nextRunDate - now) / (1000 * 60 * 60 * 24);
+        if (this.dateRange === 'today' && (diffDays < 0 || diffDays > 1)) return false;
+        if (this.dateRange === 'next7' && (diffDays < 0 || diffDays > 7)) return false;
+        if (this.dateRange === 'next30' && (diffDays < 0 || diffDays > 30)) return false;
+      }
+      if (keyword) {
+        const text = `${row.name} ${row.suiteName} ${row.projectCode} ${row.ownerName}`.toLowerCase();
+        if (!text.includes(keyword)) return false;
+      }
+      return true;
+    });
+    this.updatePaged();
   }
 
-  editSchedule(row: ScheduleRow) {
-    this.scheduleModalMode = 'edit';
-    this.scheduleEditing = row;
-    this.scheduleModalOpen = true;
-  }
-
-  closeScheduleModal() {
-    this.scheduleModalOpen = false;
-  }
-
-  handleScheduleSubmit() {
-    // TODO: wire modal submit to real save/create
-    const action = this.scheduleModalMode === 'edit' ? 'Cập nhật' : 'Tạo';
-    this.showToast('success', `${action} lịch chạy test thành công.`);
-    this.scheduleModalOpen = false;
-  }
-
-  openDeleteConfirm(row: ScheduleRow) {
-    this.scheduleToDelete = row;
-    this.deleteModalOpen = true;
-    this.deleteLoading = false;
-  }
-
-  closeDeleteConfirm() {
-    this.deleteModalOpen = false;
-    this.scheduleToDelete = null;
-    this.deleteLoading = false;
-  }
-
-  confirmDelete() {
-    if (!this.scheduleToDelete || this.deleteLoading) return;
-    this.deleteLoading = true;
-    const id = this.scheduleToDelete.id;
-    const name = this.scheduleToDelete.name;
-    // TODO: replace with API call
-    this.schedules = this.schedules.filter((row) => row.id !== id);
-    this.closeDeleteConfirm();
-    this.currentPage = 1;
-    this.showToast('success', `Xoá lịch "${name}" thành công.`);
-  }
-
-  private showToast(type: ToastState['type'], message: string) {
-    this.toast = { type, message };
-    if (this.toastTimer) {
-      window.clearTimeout(this.toastTimer);
-    }
-    const duration = type === 'success' ? 4000 : 6000;
-    this.toastTimer = window.setTimeout(() => {
-      this.toast = null;
-    }, duration);
-  }
-
-  dismissToast() {
-    this.toast = null;
-    if (this.toastTimer) {
-      window.clearTimeout(this.toastTimer);
-      this.toastTimer = undefined;
-    }
+  private updatePaged() {
+    const start = (this.pageIndex - 1) * this.pageSize;
+    this.pagedRows = this.filteredRows.slice(start, start + this.pageSize);
   }
 }

@@ -17,8 +17,18 @@
     min-height: 100vh;
     background: var(--bg);
     color: var(--text);
+  }
+
+  /* Đồng bộ kiểu scrollbar cho mọi phần tử cuộn */
+  * {
     scrollbar-width: thin;
     scrollbar-color: var(--primary-hover) var(--bg-deep);
+  }
+
+  /* Đồng nhất màu nền option trong combobox */
+  select option {
+    background: var(--bg, #2b2d31);
+    color: var(--text, #e3e5e8);
   }
 
   *::-webkit-scrollbar {

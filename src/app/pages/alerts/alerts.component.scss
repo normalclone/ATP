@@ -42,6 +42,10 @@
   color: var(--text, #e3e5e8);
   padding: 0 10px;
 }
+.header-actions select option {
+  background: var(--bg, #2b2d31);
+  color: var(--text, #e3e5e8);
+}
 
 .summary-bar {
   display: grid;
@@ -68,15 +72,19 @@
 
 .summary-card.danger {
   border-color: rgba(216, 60, 62, 0.6);
+  background: rgba(216, 60, 62, 0.22);
 }
 .summary-card.warn {
   border-color: rgba(250, 168, 26, 0.6);
+  background: rgba(250, 168, 26, 0.2);
 }
 .summary-card.success {
   border-color: rgba(59, 165, 93, 0.6);
+  background: rgba(59, 165, 93, 0.2);
 }
 .summary-card.primary {
   border-color: rgba(88, 101, 242, 0.6);
+  background: rgba(88, 101, 242, 0.2);
 }
 
 .charts-grid {
